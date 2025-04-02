@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35506.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FuzzyWeb", "FuzzyWeb.csproj", "{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fuzzy.Models", "..\Fuzzy.Models\Fuzzy.Models.csproj", "{18BF6A3A-FFE0-41B0-A7B7-926B02B5631A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fuzzy.DataAccess", "..\Fuzzy.DataAccess\Fuzzy.DataAccess.csproj", "{F4694643-7060-4D95-A061-0529B5CC33A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fuzzy.Utility", "..\Fuzzy.Utility\Fuzzy.Utility.csproj", "{5204521D-DA02-4BCB-905E-3F9B3B5FBA88}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18BF6A3A-FFE0-41B0-A7B7-926B02B5631A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18BF6A3A-FFE0-41B0-A7B7-926B02B5631A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18BF6A3A-FFE0-41B0-A7B7-926B02B5631A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18BF6A3A-FFE0-41B0-A7B7-926B02B5631A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4694643-7060-4D95-A061-0529B5CC33A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4694643-7060-4D95-A061-0529B5CC33A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4694643-7060-4D95-A061-0529B5CC33A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4694643-7060-4D95-A061-0529B5CC33A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5204521D-DA02-4BCB-905E-3F9B3B5FBA88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5204521D-DA02-4BCB-905E-3F9B3B5FBA88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5204521D-DA02-4BCB-905E-3F9B3B5FBA88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5204521D-DA02-4BCB-905E-3F9B3B5FBA88}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
