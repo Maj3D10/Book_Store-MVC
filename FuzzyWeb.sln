@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35506.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FuzzyWeb", "FuzzyWeb.csproj", "{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fuzzy.Models", "..\Fuzzy.Models\Fuzzy.Models.csproj", "{0D4C31A6-258A-4A2B-8B82-6174F151938F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fuzzy.Utility", "..\Fuzzy.Utility\Fuzzy.Utility.csproj", "{677519D4-9380-47FB-8EF4-925FEB4B2A79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fuzzy.DataAccess", "..\Fuzzy.DataAccess\Fuzzy.DataAccess.csproj", "{7F123E33-8952-469E-B400-6956AE8840A6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCE06C32-B22E-48D8-B2B4-5CF85451E82A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D4C31A6-258A-4A2B-8B82-6174F151938F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D4C31A6-258A-4A2B-8B82-6174F151938F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D4C31A6-258A-4A2B-8B82-6174F151938F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D4C31A6-258A-4A2B-8B82-6174F151938F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{677519D4-9380-47FB-8EF4-925FEB4B2A79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{677519D4-9380-47FB-8EF4-925FEB4B2A79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{677519D4-9380-47FB-8EF4-925FEB4B2A79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{677519D4-9380-47FB-8EF4-925FEB4B2A79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F123E33-8952-469E-B400-6956AE8840A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F123E33-8952-469E-B400-6956AE8840A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F123E33-8952-469E-B400-6956AE8840A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F123E33-8952-469E-B400-6956AE8840A6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
