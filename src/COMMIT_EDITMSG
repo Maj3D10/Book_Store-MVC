@@ -1,0 +1,128 @@
+Added Controllers and Views for Product and Category
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Thu Mar 20 03:06:51 2025 +0100
+#
+# On branch master
+# Your branch is up to date with 'origin/master'.
+#
+# No commands done.
+# Next command to do (1 remaining command):
+#    pick 4afc8bc Add project files.
+# You are currently editing a commit while rebasing branch 'master' on 'ade863e'.
+#
+# Changes to be committed:
+#	new file:   Areas/Admin/Controllers/CategoryController.cs
+#	new file:   Areas/Admin/Controllers/ProductController.cs
+#	new file:   Areas/Admin/Views/Category/Create.cshtml
+#	new file:   Areas/Admin/Views/Category/Delete.cshtml
+#	new file:   Areas/Admin/Views/Category/Edit.cshtml
+#	new file:   Areas/Admin/Views/Category/Index.cshtml
+#	new file:   Areas/Admin/Views/Product/Delete.cshtml
+#	new file:   Areas/Admin/Views/Product/Index.cshtml
+#	new file:   Areas/Admin/Views/Product/Upsert.cshtml
+#	new file:   Areas/Admin/Views/_ViewImports.cshtml
+#	new file:   Areas/Admin/Views/_ViewStart.cshtml
+#	new file:   Areas/Customer/Controllers/HomeController.cs
+#	new file:   Areas/Customer/Views/Home/Details.cshtml
+#	new file:   Areas/Customer/Views/Home/Index.cshtml
+#	renamed:    Views/Home/Privacy.cshtml -> Areas/Customer/Views/Home/Privacy.cshtml
+#	new file:   Areas/Customer/Views/_ViewImports.cshtml
+#	new file:   Areas/Customer/Views/_ViewStart.cshtml
+#	new file:   Areas/Identity/Pages/Account/AccessDenied.cshtml
+#	new file:   Areas/Identity/Pages/Account/AccessDenied.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ConfirmEmail.cshtml
+#	new file:   Areas/Identity/Pages/Account/ConfirmEmail.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ConfirmEmailChange.cshtml
+#	new file:   Areas/Identity/Pages/Account/ConfirmEmailChange.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ExternalLogin.cshtml
+#	new file:   Areas/Identity/Pages/Account/ExternalLogin.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ForgotPassword.cshtml
+#	new file:   Areas/Identity/Pages/Account/ForgotPassword.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ForgotPasswordConfirmation.cshtml
+#	new file:   Areas/Identity/Pages/Account/ForgotPasswordConfirmation.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Lockout.cshtml
+#	new file:   Areas/Identity/Pages/Account/Lockout.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Login.cshtml
+#	new file:   Areas/Identity/Pages/Account/Login.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/LoginWith2fa.cshtml
+#	new file:   Areas/Identity/Pages/Account/LoginWith2fa.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/LoginWithRecoveryCode.cshtml
+#	new file:   Areas/Identity/Pages/Account/LoginWithRecoveryCode.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Logout.cshtml
+#	new file:   Areas/Identity/Pages/Account/Logout.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/Disable2fa.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/Disable2fa.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/DownloadPersonalData.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/DownloadPersonalData.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/Email.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/Email.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/EnableAuthenticator.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/EnableAuthenticator.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/ExternalLogins.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/ExternalLogins.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/GenerateRecoveryCodes.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/GenerateRecoveryCodes.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/Index.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/Index.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/ManageNavPages.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/PersonalData.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/PersonalData.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/ResetAuthenticator.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/ResetAuthenticator.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/SetPassword.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/SetPassword.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/ShowRecoveryCodes.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/ShowRecoveryCodes.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/TwoFactorAuthentication.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/TwoFactorAuthentication.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/Manage/_Layout.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/_ManageNav.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/_StatusMessage.cshtml
+#	new file:   Areas/Identity/Pages/Account/Manage/_ViewImports.cshtml
+#	new file:   Areas/Identity/Pages/Account/Register.cshtml
+#	new file:   Areas/Identity/Pages/Account/Register.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/RegisterConfirmation.cshtml
+#	new file:   Areas/Identity/Pages/Account/RegisterConfirmation.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ResendEmailConfirmation.cshtml
+#	new file:   Areas/Identity/Pages/Account/ResendEmailConfirmation.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ResetPassword.cshtml
+#	new file:   Areas/Identity/Pages/Account/ResetPassword.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/ResetPasswordConfirmation.cshtml
+#	new file:   Areas/Identity/Pages/Account/ResetPasswordConfirmation.cshtml.cs
+#	new file:   Areas/Identity/Pages/Account/_StatusMessage.cshtml
+#	new file:   Areas/Identity/Pages/Account/_ViewImports.cshtml
+#	new file:   Areas/Identity/Pages/Error.cshtml
+#	new file:   Areas/Identity/Pages/Error.cshtml.cs
+#	new file:   Areas/Identity/Pages/_ValidationScriptsPartial.cshtml
+#	new file:   Areas/Identity/Pages/_ViewImports.cshtml
+#	new file:   Areas/Identity/Pages/_ViewStart.cshtml
+#	deleted:    Controllers/HomeController.cs
+#	modified:   FuzzyWeb.csproj
+#	modified:   FuzzyWeb.sln
+#	deleted:    Models/ErrorViewModel.cs
+#	modified:   Program.cs
+#	deleted:    Views/Home/Index.cshtml
+#	modified:   Views/Shared/Error.cshtml
+#	modified:   Views/Shared/_Layout.cshtml
+#	modified:   Views/Shared/_Layout.cshtml.css
+#	new file:   Views/Shared/_LoginPartial.cshtml
+#	new file:   Views/Shared/_Notification.cshtml
+#	modified:   Views/_ViewImports.cshtml
+#	modified:   appsettings.json
+#	modified:   wwwroot/css/site.css
+#	new file:   wwwroot/images/product/10a37e9c-3904-4ddf-ac62-f3e3b361d5cb.jpg
+#	new file:   wwwroot/images/product/28152433-e624-4c07-81cf-8f8e2433ae42.jpg
+#	new file:   wwwroot/images/product/3560f9f7-9a60-4726-b16d-b6d61d91a974.jpg
+#	new file:   wwwroot/images/product/8c2d97c8-17f9-41b6-a1c3-843a77af8ff1.jpg
+#	new file:   wwwroot/images/product/b1ff08b8-f02b-49a3-8f70-0b8f01f2baf9.jpg
+#	new file:   wwwroot/images/product/c2978a0b-be9a-406d-8be1-b9188ac9a2ab.jpg
+#	new file:   wwwroot/js/product.js
+#	modified:   wwwroot/lib/bootstrap/dist/css/bootstrap.css
+#

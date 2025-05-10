@@ -1,11 +1,15 @@
 ﻿using Fuzzy.DataAccess.Data;
 using Fuzzy.DataAccess.Repository.IRepository;
 using Fuzzy.Models;
+using Fuzzy.Utility;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FuzzyWeb.Areas.Admin.Controllers
 {
+
     [Area("Admin")]
+    //[Authorize(Roles =SD.Role_Admin)]
     public class CategoryController : Controller
     {
         readonly IUnitOfWork _unitOfWork;

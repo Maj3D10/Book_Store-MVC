@@ -1,12 +1,16 @@
 ﻿using Fuzzy.DataAccess.Repository.IRepository;
 using Fuzzy.Models;
 using Fuzzy.Models.ViewModel;
+using Fuzzy.Utility;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FuzzyWeb.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    //[Authorize(Roles = SD.Role_Admin)]
+
     public class ProductController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
