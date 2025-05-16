@@ -7,6 +7,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Identity;
 using Fuzzy.Utility;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Stripe;
 
 namespace FuzzyWeb
 {
@@ -27,6 +28,8 @@ namespace FuzzyWeb
                 SupportedUICultures = supportedCultures.Select(c => new CultureInfo(c)).ToList()
             };
 
+
+            builder.Services.Configure<StripeSetting>(builder.Configuration.GetSection("Stripe")); 
             builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
             // Add services to the container.
@@ -65,7 +68,7 @@ namespace FuzzyWeb
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
+            StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:SecretKey").Get<string>();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();

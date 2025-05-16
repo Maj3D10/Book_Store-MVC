@@ -14,6 +14,8 @@ namespace Fuzzy.DataAccess.Repository.IRepository
         IShoppingCartRepository ShoppingCart { get; }
         ICompanyRepository Company { get; }
         IApplicationUserRepository ApplicationUser { get; }
+        IOrderDetailRepository orderDetail { get; }
+        IOrderHeaderRepository orderHeader { get; }
 
         void Save();
 

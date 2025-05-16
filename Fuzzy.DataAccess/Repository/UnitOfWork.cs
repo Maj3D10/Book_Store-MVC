@@ -18,6 +18,10 @@ namespace Fuzzy.DataAccess.Repository
         public ICompanyRepository Company { get; private set; }
         public IShoppingCartRepository ShoppingCart { get; private set; }
         public IApplicationUserRepository ApplicationUser { get; private set; }
+
+       public IOrderHeaderRepository orderHeader { get; private set; }
+       public IOrderDetailRepository orderDetail { get; private set; }
+
         public UnitOfWork(AppDbContext db) 
         {
             _db = db;
@@ -26,6 +30,8 @@ namespace Fuzzy.DataAccess.Repository
             Company = new CompanyRepository(_db);
             ShoppingCart = new ShoppingCartRepository(_db);
             ApplicationUser = new ApplicationUserRepository(_db);
+            orderDetail= new OrderDetailRepository(_db);
+            orderHeader= new OrderHeaderRepository(_db);
         }
 
         public void Save()
