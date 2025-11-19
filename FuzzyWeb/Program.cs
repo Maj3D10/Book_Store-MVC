@@ -1,13 +1,14 @@
 using Fuzzy.DataAccess.Data;
+using Fuzzy.DataAccess.DbInitializer;
 using Fuzzy.DataAccess.Repository;
 using Fuzzy.DataAccess.Repository.IRepository;
+using Fuzzy.Utility;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
-using Microsoft.AspNetCore.Identity;
-using Fuzzy.Utility;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Stripe;
+using System.Globalization;
 
 namespace FuzzyWeb
 {
@@ -49,6 +50,16 @@ namespace FuzzyWeb
 
             });
 
+            builder.Services.AddDistributedMemoryCache();
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(100);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
+            
+            builder.Services.AddScoped<IDbInitializer, DbInitializer>();
+
             builder.Services.AddRazorPages();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IEmailSender,EmailSender>();
@@ -72,12 +83,28 @@ namespace FuzzyWeb
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseSession(); // ?? must be added before app.MapControllers() or app.MapDefaultControllerRoute()
+            SeedDatabase();
+
+
             app.MapRazorPages();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
 
             app.Run();
+
+
+            void SeedDatabase()
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+                    dbInitializer.Initialize();
+                }
+            }
         }
+
+
     }
 }

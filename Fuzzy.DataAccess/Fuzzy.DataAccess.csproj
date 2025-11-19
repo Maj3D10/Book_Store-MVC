@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fuzzy.Models\Fuzzy.Models.csproj" />
+    <ProjectReference Include="..\Fuzzy.Utility\Fuzzy.Utility.csproj" />
   </ItemGroup>
 
 </Project>

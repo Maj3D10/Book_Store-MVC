@@ -1,9 +1,11 @@
-using System.Diagnostics;
-using System.Security.Claims;
 using Fuzzy.DataAccess.Repository.IRepository;
 using Fuzzy.Models;
+using Fuzzy.Utility;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Security.Claims;
 
 namespace FuzzyWeb.Areas.Customer.Controllers
 {
@@ -24,11 +26,14 @@ namespace FuzzyWeb.Areas.Customer.Controllers
 
         public IActionResult Index()
         {
+
+
             IEnumerable<Product> productList=_unitOfWork.Product.GetAll(includeProperties: "Category");
             return View(productList);
         } 
         public IActionResult Details(int ProductId)
         {
+
             ShoppingCart cart = new()
             {
                Product=_unitOfWork.Product.Get(u=>u.Id== ProductId, includeProperties: "Category"),
@@ -54,18 +59,21 @@ namespace FuzzyWeb.Areas.Customer.Controllers
             u.ProductId==shoppingCart.ProductId);
 
 
-
             if (shoppingcartFromDb != null)
             {
                 shoppingcartFromDb.Count += shoppingCart.Count;
                 _unitOfWork.ShoppingCart.Update(shoppingcartFromDb);
+                _unitOfWork.Save();
 
-            } else {
+
+            }
+            else {
                 _unitOfWork.ShoppingCart.Add(shoppingCart);
+                _unitOfWork.Save();
+                HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId).Count());
             }
 
             TempData["success"] = "Cart update successfully";
-            _unitOfWork.Save();
 
           return RedirectToAction(nameof(Index));
         }

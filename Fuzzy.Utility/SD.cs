@@ -31,5 +31,8 @@ namespace Fuzzy.Utility
 
 
 
+
+        public const string SessionCart = "SessionShoppingCart";
+
     }
 }
