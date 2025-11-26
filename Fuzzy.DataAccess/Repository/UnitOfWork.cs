@@ -22,6 +22,8 @@ namespace Fuzzy.DataAccess.Repository
        public IOrderHeaderRepository orderHeader { get; private set; }
        public IOrderDetailRepository orderDetail { get; private set; }
 
+       public IProductImageRepository ProductImage { get; private set; }
+
         public UnitOfWork(AppDbContext db) 
         {
             _db = db;
@@ -32,6 +34,8 @@ namespace Fuzzy.DataAccess.Repository
             ApplicationUser = new ApplicationUserRepository(_db);
             orderDetail= new OrderDetailRepository(_db);
             orderHeader= new OrderHeaderRepository(_db);
+
+            ProductImage= new ProductImageRepository(_db);
         }
 
         public void Save()

@@ -32,15 +32,24 @@ namespace FuzzyBook.Web.Areas.Customer.Controllers
 
                 orderheader = new()
             };
+            IEnumerable<ProductImage> productImages = _unitOfWork.ProductImage.GetAll();
+
 
             foreach (var cart in shoppingCartVM.ShoppingCartList)
             {
+                cart.Product.ProductImages = productImages.Where(u => u.ProductId == cart.Product.Id).ToList();
+
+
                 cart.Price = GetPriceBasedOnQuantity(cart);
                 shoppingCartVM.orderheader.OrderTotal += (cart.Price * cart.Count);
             }
 
             return View(shoppingCartVM);
         }
+
+
+
+
         private double GetPriceBasedOnQuantity(ShoppingCart shoppingCart)
         {
             if (shoppingCart.Count <= 50)
@@ -64,13 +73,13 @@ namespace FuzzyBook.Web.Areas.Customer.Controllers
         }
         public IActionResult Minus(int cartId)
         {
-            var cartFromDb = _unitOfWork.ShoppingCart.Get(u => u.Id == cartId, tracked
-                : true);
+            var cartFromDb = _unitOfWork.ShoppingCart.Get(u => u.Id == cartId);
             if (cartFromDb.Count <= 1)
             {
+                _unitOfWork.ShoppingCart.Remove(cartFromDb);
+
                 HttpContext.Session.SetInt32(SD.SessionCart,
               _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == cartFromDb.ApplicationUserId).Count() - 1);
-                _unitOfWork.ShoppingCart.Remove(cartFromDb);
             }
             else
             {
@@ -86,14 +95,17 @@ namespace FuzzyBook.Web.Areas.Customer.Controllers
         {
 
 
-            var cartFromDb = _unitOfWork.ShoppingCart.Get(u => u.Id == cartId, tracked
-                :true);
+            var cartFromDb = _unitOfWork.ShoppingCart.Get(u => u.Id == cartId);
 
-            HttpContext.Session.SetInt32(SD.SessionCart,
-              _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == cartFromDb.ApplicationUserId).Count() - 1);
+
 
 
             _unitOfWork.ShoppingCart.Remove(cartFromDb);
+
+
+            HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart
+           .GetAll(u => u.ApplicationUserId == cartFromDb.ApplicationUserId).Count() - 1);
+
 
             _unitOfWork.Save();
             return RedirectToAction(nameof(Index));

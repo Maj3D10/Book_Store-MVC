@@ -31,10 +31,11 @@ namespace Fuzzy.DataAccess.Repository
                 productFromDb.Price50 = product.Price50;
                 productFromDb.Price100 = product.Price100;
 
-                if (product.ImageUrl != null)
-                {
-                    productFromDb.ImageUrl = product.ImageUrl;
-                }
+                productFromDb.ProductImages = product.ProductImages;
+                //if (product.ImageUrl != null)
+                //{
+                //    productFromDb.ImageUrl = product.ImageUrl;
+                //}
 
             }
         }

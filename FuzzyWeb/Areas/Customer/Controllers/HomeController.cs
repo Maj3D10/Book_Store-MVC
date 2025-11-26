@@ -28,7 +28,7 @@ namespace FuzzyWeb.Areas.Customer.Controllers
         {
 
 
-            IEnumerable<Product> productList=_unitOfWork.Product.GetAll(includeProperties: "Category");
+            IEnumerable<Product> productList=_unitOfWork.Product.GetAll(includeProperties: "Category,ProductImages");
             return View(productList);
         } 
         public IActionResult Details(int ProductId)
@@ -36,7 +36,7 @@ namespace FuzzyWeb.Areas.Customer.Controllers
 
             ShoppingCart cart = new()
             {
-               Product=_unitOfWork.Product.Get(u=>u.Id== ProductId, includeProperties: "Category"),
+               Product=_unitOfWork.Product.Get(u=>u.Id== ProductId, includeProperties: "Category,ProductImages"),
                Count=1,
                ProductId=ProductId
             };

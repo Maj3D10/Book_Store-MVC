@@ -16,6 +16,7 @@ namespace Fuzzy.DataAccess.Repository.IRepository
         IApplicationUserRepository ApplicationUser { get; }
         IOrderDetailRepository orderDetail { get; }
         IOrderHeaderRepository orderHeader { get; }
+        IProductImageRepository ProductImage { get; }
 
         void Save();
 

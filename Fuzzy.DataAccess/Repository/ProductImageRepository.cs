@@ -10,19 +10,19 @@ using System.Threading.Tasks;
 
 namespace Fuzzy.DataAccess.Repository
 {
-    public class ApplicationUserRepository : Repository<ApplicationUser>,IApplicationUserRepository
+    public class ProductImageRepository : Repository<ProductImage>, IProductImageRepository
     {
         private readonly AppDbContext _db;
-        public ApplicationUserRepository(AppDbContext db): base(db)
+        public ProductImageRepository(AppDbContext db): base(db)
         {
             _db = db; 
         }
-        public void Update(ApplicationUser applicationUser)
+
+      
+
+        public void Update(ProductImage obj)
         {
-            _db.ApplicationUsers.Update(applicationUser);
+            _db.Update(obj);
         }
-
-
-
     }
 }
