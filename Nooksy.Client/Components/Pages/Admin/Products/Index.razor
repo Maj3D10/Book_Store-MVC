@@ -1,0 +1,153 @@
+@page "/admin/products"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@using Nooksy.Client.Components.UI
+
+<PageTitle>Manage Products - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="font-display fw-extrabold text-primary m-0">Products Catalog</h2>
+        <a href="admin/products/upsert" class="btn-nooksy btn-nooksy-primary py-2 fs-7" style="border-radius: var(--radius-sm);">
+            <i class="bi bi-plus-lg"></i> Create Product
+        </a>
+    </div>
+
+    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        @if (isLoading)
+        {
+            <LoadingSpinner Message="Cataloguing book inventory..." />
+        }
+        else
+        {
+            <DataTable TItem="Product"
+                       Items="products"
+                       PageSize="10"
+                       SearchPlaceholder="Search title, author, ISBN..."
+                       SearchMatch="@((prod, query) => prod.Title.Contains(query, StringComparison.OrdinalIgnoreCase) || prod.Author.Contains(query, StringComparison.OrdinalIgnoreCase) || prod.ISBN.Contains(query, StringComparison.OrdinalIgnoreCase))">
+                <HeaderTemplate>
+                    <th style="width: 60px;">Cover</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th class="text-end">Actions</th>
+                </HeaderTemplate>
+                <RowTemplate Context="prod">
+                    <td>
+                        <div class="rounded overflow-hidden" style="width: 40px; height: 55px; background: #eef5fa;">
+                            @if (prod.ProductImages != null && prod.ProductImages.Any())
+                            {
+                                <img src="@prod.ProductImages.First().ImageUrl" class="w-100 h-100" style="object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-book fs-6"></i></div>
+                            }
+                        </div>
+                    </td>
+                    <td class="fw-bold">@prod.Title</td>
+                    <td class="text-muted">@prod.Author</td>
+                    <td><span class="badge bg-light text-dark px-3 py-1">@prod.Category?.Name</span></td>
+                    <td class="fw-bold text-primary">$@prod.Price.ToString("F2")</td>
+                    <td class="text-end">
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <a href="admin/products/upsert/@prod.Id" class="btn btn-sm btn-outline-primary" style="border-radius: var(--radius-sm);" title="Edit Product">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(prod)"
+                                    style="border-radius: var(--radius-sm);" title="Delete Product">
+                                <i class="bi bi-trash3"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </RowTemplate>
+            </DataTable>
+        }
+    </div>
+</div>
+
+<NooksyModal Title="Delete Product?" IsOpen="isDeleteModalOpen" OnClose="CancelDelete">
+    <div class="text-center font-body py-2">
+        <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-3 d-block"></i>
+        <h5 class="font-display mb-2">Are you absolutely sure?</h5>
+        <p class="text-muted small">You are about to delete <strong>"@productToDelete?.Title"</strong>. This action is permanent and cannot be undone.</p>
+
+        <div class="d-flex align-items-center justify-content-center gap-3 mt-4">
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Outline" OnClick="CancelDelete">Cancel</NooksyButton>
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Danger" OnClick="ExecuteDelete">Yes, Delete</NooksyButton>
+        </div>
+    </div>
+</NooksyModal>
+
+@code {
+    private List<Product> products = new();
+    private bool isLoading = true;
+
+    private bool isDeleteModalOpen = false;
+    private Product? productToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        isLoading = true;
+        try
+        {
+            products = UnitOfWork.Product.GetAll(includeProperties: "Category,ProductImages").ToList();
+            var allImages = UnitOfWork.ProductImage.GetAll().ToList();
+            foreach (var prod in products)
+            {
+                prod.ProductImages = allImages.Where(i => i.ProductId == prod.Id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve products.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ConfirmDelete(Product prod)
+    {
+        productToDelete = prod;
+        isDeleteModalOpen = true;
+    }
+
+    private void CancelDelete()
+    {
+        productToDelete = null;
+        isDeleteModalOpen = false;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (productToDelete == null) return;
+        try
+        {
+            var images = UnitOfWork.ProductImage.GetAll(u => u.ProductId == productToDelete.Id).ToList();
+            UnitOfWork.ProductImage.RemoveRange(images);
+            UnitOfWork.Product.Remove(productToDelete);
+            UnitOfWork.Save();
+
+            ToastService.ShowSuccess($"\"{productToDelete.Title}\" was deleted successfully.");
+            isDeleteModalOpen = false;
+            productToDelete = null;
+
+            await LoadProducts();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not delete product.");
+        }
+    }
+}

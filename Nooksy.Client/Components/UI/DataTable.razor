@@ -1,0 +1,159 @@
+@typeparam TItem
+
+<div class="d-flex flex-column gap-3">
+    <!-- Top Controls: Search and Entries selector -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted">Show</span>
+            <select class="form-select form-select-sm" @bind="PageSize" style="width: auto; border-radius: var(--radius-sm); border-color: var(--color-border);">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+            <span class="text-muted">entries</span>
+        </div>
+        <div class="d-flex align-items-center gap-2" style="max-width: 320px; width: 100%;">
+            <span class="text-muted">Search:</span>
+            <div class="position-relative w-100">
+                <input type="text" 
+                       class="form-control form-control-sm ps-4" 
+                       placeholder="@SearchPlaceholder" 
+                       @bind-value="SearchQuery" 
+                       @bind-value:event="oninput"
+                       style="border-radius: 100px; border-color: var(--color-border); box-shadow: var(--shadow-sm);" />
+                <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-responsive" style="border-radius: var(--radius-md); overflow: hidden;">
+        <table class="table table-striped nooksy-table" style="width: 100%;">
+            <thead>
+                <tr>
+                    @HeaderTemplate
+                </tr>
+            </thead>
+            <tbody>
+                @if (FilteredItems == null || !FilteredItems.Any())
+                {
+                    <tr>
+                        <td colspan="20" class="text-center py-5 text-muted">
+                            <i class="bi bi-info-circle fs-2 d-block mb-2"></i>
+                            No matching records found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in PaginatedItems)
+                    {
+                        <tr>
+                            @RowTemplate(item)
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    @if (TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+            <span class="text-muted small">
+                Showing @(StartEntryIndex) to @(EndEntryIndex) of @(FilteredItemsCount) entries
+            </span>
+            <nav aria-label="Table navigation">
+                <ul class="pagination pagination-sm m-0" style="gap: 4px;">
+                    <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => SetPage(CurrentPage - 1)" style="border-radius: var(--radius-sm); border: 1px solid var(--color-border); color: var(--color-primary);">Previous</button>
+                    </li>
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        var pageNumber = i;
+                        <li class="page-item @(CurrentPage == pageNumber ? "active" : "")">
+                            <button class="page-link" @onclick="() => SetPage(pageNumber)" 
+                                    style="border-radius: var(--radius-sm); border: 1px solid var(--color-border); 
+                                           background: @(CurrentPage == pageNumber ? "var(--color-primary)" : "transparent");
+                                           color: @(CurrentPage == pageNumber ? "white" : "var(--color-text)");">@pageNumber</button>
+                        </li>
+                    }
+                    <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => SetPage(CurrentPage + 1)" style="border-radius: var(--radius-sm); border: 1px solid var(--color-border); color: var(--color-primary);">Next</button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem> Items { get; set; } = Enumerable.Empty<TItem>();
+    [Parameter] public RenderFragment? HeaderTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public Func<TItem, string, bool>? SearchMatch { get; set; }
+    [Parameter] public int PageSize { get; set; } = 10;
+
+    private string _searchQuery = "";
+    private int CurrentPage { get; set; } = 1;
+
+    private string SearchQuery
+    {
+        get => _searchQuery;
+        set
+        {
+            if (_searchQuery != value)
+            {
+                _searchQuery = value;
+                CurrentPage = 1; // Reset to page 1 on search
+            }
+        }
+    }
+
+    private IEnumerable<TItem> FilteredItems
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(SearchQuery) || SearchMatch == null)
+            {
+                return Items;
+            }
+            return Items.Where(item => SearchMatch(item, SearchQuery));
+        }
+    }
+
+    private int FilteredItemsCount => FilteredItems.Count();
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredItemsCount / PageSize);
+
+    private IEnumerable<TItem> PaginatedItems
+    {
+        get
+        {
+            return FilteredItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize);
+        }
+    }
+
+    private int StartEntryIndex => FilteredItemsCount == 0 ? 0 : (CurrentPage - 1) * PageSize + 1;
+    private int EndEntryIndex => Math.Min(CurrentPage * PageSize, FilteredItemsCount);
+
+    private void SetPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            CurrentPage = page;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Clamp current page in case items change
+        if (CurrentPage > TotalPages && TotalPages > 0)
+        {
+            CurrentPage = TotalPages;
+        }
+    }
+}

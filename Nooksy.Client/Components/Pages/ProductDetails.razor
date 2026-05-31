@@ -1,0 +1,273 @@
+@page "/product/{id:int}"
+@inject IUnitOfWork UnitOfWork
+@inject AuthenticationStateProvider AuthStateProvider
+@inject Nooksy.Client.State.CartState CartState
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@using System.Security.Claims
+
+<PageTitle>@(product != null ? $"{product.Title} - Nooksy" : "Book Details")</PageTitle>
+
+<div class="container-xxl py-5">
+    <!-- Back to Shop link -->
+    <a href="" class="btn btn-sm btn-link text-decoration-none text-muted font-display fw-bold mb-4 p-0">
+        <i class="bi bi-arrow-left me-2"></i> Back to Shop
+    </a>
+
+    @if (isLoading)
+    {
+        <Nooksy.Client.Components.UI.LoadingSpinner Message="Dusting off the book cover..." />
+    }
+    else if (product == null)
+    {
+        <div class="text-center py-5 nooksy-card p-5" style="background: white;">
+            <i class="bi bi-x-circle fs-1 text-danger mb-3"></i>
+            <h3 class="font-display text-primary">Book not found</h3>
+            <p class="text-muted mb-4">We couldn't find the ebook you were looking for.</p>
+            <a href="" class="btn-nooksy btn-nooksy-primary">Return to Shop</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-5">
+            <!-- Left: Book Cover Carousel -->
+            <div class="col-12 col-md-5">
+                <div class="nooksy-card p-2 bg-white" style="position: relative; overflow: hidden; max-width: 440px; margin: 0 auto;">
+                    <!-- Main Cover Preview -->
+                    <div class="position-relative w-100 mb-3" style="aspect-ratio: 3/4; overflow: hidden; background: #eef5fa; border-radius: var(--radius-md);">
+                        @if (product.ProductImages != null && product.ProductImages.Any())
+                        {
+                            <img src="@product.ProductImages.ElementAt(currentImageIndex).ImageUrl" class="w-100 h-100" style="object-fit: cover;" alt="Book cover" />
+                            
+                            @if (product.ProductImages.Count > 1)
+                            {
+                                <!-- Prev Arrow -->
+                                <button type="button" class="btn btn-primary position-absolute border-0" @onclick="PrevImage"
+                                        style="top: 50%; left: 10px; transform: translateY(-50%); border-radius: 50%; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: rgba(74, 171, 219, 0.85);">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <!-- Next Arrow -->
+                                <button type="button" class="btn btn-primary position-absolute border-0" @onclick="NextImage"
+                                        style="top: 50%; right: 10px; transform: translateY(-50%); border-radius: 50%; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: rgba(74, 171, 219, 0.85);">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                                <i class="bi bi-book fs-1 mb-2 text-primary opacity-50"></i>
+                                <span class="fw-bold">No cover yet</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Carousel Thumbnails Indicator Grid -->
+                    @if (product.ProductImages != null && product.ProductImages.Count > 1)
+                    {
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            @for (int i = 0; i < product.ProductImages.Count; i++)
+                            {
+                                var index = i;
+                                <button type="button" class="border rounded-sm p-0" @onclick="() => SetActiveImage(index)"
+                                        style="width: 50px; height: 65px; border-radius: 4px; overflow: hidden; border-color: @(currentImageIndex == index ? "var(--color-primary)" : "var(--color-border)") !important; border-width: 2px !important; outline: none;">
+                                    <img src="@product.ProductImages.ElementAt(index).ImageUrl" class="w-100 h-100" style="object-fit: cover;" />
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Details, Pricing, Cart actions -->
+            <div class="col-12 col-md-7 text-start">
+                <span class="badge text-white px-3 py-1 mb-2 bg-primary rounded-pill font-display small fw-bold">@product.Category.Name</span>
+                <h1 class="font-display fw-extrabold text-primary display-5 mb-2">@product.Title</h1>
+                <p class="fs-5 text-muted mb-4 font-display">By <span class="fw-bold text-accent">@product.Author</span></p>
+
+                <!-- ISBN Card -->
+                <div class="p-3 mb-4 rounded-lg bg-white shadow-sm border border-light" style="max-width: 320px; border-radius: var(--radius-md);">
+                    <span class="text-text-muted small fw-bold font-display d-block">ISBN IDENTIFIER</span>
+                    <span class="fs-5 fw-bold font-body text-primary"><i class="bi bi-bookmark-fill text-accent me-1"></i> @product.ISBN</span>
+                </div>
+
+                <!-- Pricing Tier Cards Grid -->
+                <h5 class="font-display fw-bold text-primary mb-3">Volume Pricing Tiers</h5>
+                <div class="table-responsive mb-4" style="max-width: 480px;">
+                    <table class="table table-bordered text-center align-middle rounded-lg overflow-hidden border border-light" style="border-radius: var(--radius-md);">
+                        <thead class="table-primary text-white" style="background: var(--color-primary);">
+                            <tr>
+                                <th class="py-2 small font-display">QUANTITY</th>
+                                <th class="py-2 small font-display">PRICE PER UNIT</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">
+                            <tr class="@(quantity < 50 ? "table-light border-primary" : "")">
+                                <td class="py-3 font-body">1 – 49 copies</td>
+                                <td class="py-3 font-body fw-bold text-primary">$@product.Price.ToString("F2")</td>
+                            </tr>
+                            <tr class="@(quantity >= 50 && quantity < 100 ? "table-light border-primary" : "")">
+                                <td class="py-3 font-body">50 – 99 copies</td>
+                                <td class="py-3 font-body fw-bold text-primary">$@product.Price50.ToString("F2")</td>
+                            </tr>
+                            <tr class="@(quantity >= 100 ? "table-light border-primary" : "")">
+                                <td class="py-3 font-body">100+ copies</td>
+                                <td class="py-3 font-body fw-bold text-primary">$@product.Price100.ToString("F2")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action section (Quantity & Buy) -->
+                <div class="d-flex align-items-center gap-3 flex-wrap mb-5">
+                    <!-- Quantity Counter box -->
+                    <div class="d-flex align-items-center bg-white border border-light rounded-pill shadow-sm" style="padding: 4px; border-radius: 100px;">
+                        <button type="button" class="btn btn-link text-primary border-0 p-2" @onclick="DecrementQuantity" aria-label="Decrease quantity">
+                            <i class="bi bi-dash-circle-fill fs-4"></i>
+                        </button>
+                        <input type="number" class="form-control text-center border-0 font-display fw-bold fs-5 p-0" 
+                               style="width: 60px; box-shadow: none;" @bind="quantity" @bind:event="oninput" min="1" />
+                        <button type="button" class="btn btn-link text-primary border-0 p-2" @onclick="IncrementQuantity" aria-label="Increase quantity">
+                            <i class="bi bi-plus-circle-fill fs-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Add to Cart CTA -->
+                    <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Primary" 
+                                  Size="lg" 
+                                  Class="py-3 px-5 border-0 rounded-pill shadow-md"
+                                  IsLoading="isAddingToCart"
+                                  OnClick="AddToCart">
+                        <i class="bi bi-cart-plus-fill me-2 fs-5"></i> Add to Box
+                    </Nooksy.Client.Components.UI.NooksyButton>
+                </div>
+
+                <!-- Description Block (HTML rendered) -->
+                <h4 class="font-display fw-bold text-primary border-bottom pb-2 mb-3">Book Summary</h4>
+                <div class="font-body text-text-muted lh-lg" style="text-align: justify;">
+                    @if (!string.IsNullOrEmpty(product.Description))
+                    {
+                        @((MarkupString)product.Description)
+                    }
+                    else
+                    {
+                        <p>No description provided for this ebook cover.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Product? product;
+    private int currentImageIndex = 0;
+    private int quantity = 1;
+    private bool isLoading = true;
+    private bool isAddingToCart = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            product = UnitOfWork.Product.Get(u => u.Id == Id, includeProperties: "Category,ProductImages");
+            if (product != null)
+            {
+                product.ProductImages = UnitOfWork.ProductImage.GetAll(u => u.ProductId == Id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Logging
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SetActiveImage(int index) => currentImageIndex = index;
+
+    private void PrevImage()
+    {
+        if (product?.ProductImages == null || !product.ProductImages.Any()) return;
+        currentImageIndex = (currentImageIndex - 1 + product.ProductImages.Count) % product.ProductImages.Count;
+    }
+
+    private void NextImage()
+    {
+        if (product?.ProductImages == null || !product.ProductImages.Any()) return;
+        currentImageIndex = (currentImageIndex + 1) % product.ProductImages.Count;
+    }
+
+    private void IncrementQuantity() => quantity++;
+
+    private void DecrementQuantity()
+    {
+        if (quantity > 1) quantity--;
+    }
+
+    private async Task AddToCart()
+    {
+        if (product == null) return;
+        if (quantity < 1)
+        {
+            ToastService.ShowWarning("Please select at least 1 book cover.");
+            return;
+        }
+
+        isAddingToCart = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity == null || !user.Identity.IsAuthenticated)
+            {
+                ToastService.ShowWarning("Please log in to add books to your box.");
+                NavigationManager.NavigateTo("Account/Login");
+                return;
+            }
+
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return;
+
+            // Retrieve or create cart
+            var cartFromDb = UnitOfWork.ShoppingCart.Get(u => u.ApplicationUserId == userId && u.ProductId == product.Id);
+            if (cartFromDb == null)
+            {
+                var newCart = new ShoppingCart
+                {
+                    ApplicationUserId = userId,
+                    ProductId = product.Id,
+                    Count = quantity
+                };
+                UnitOfWork.ShoppingCart.Add(newCart);
+                ToastService.ShowSuccess($"Added {quantity} x \"{product.Title}\" to your box!");
+            }
+            else
+            {
+                cartFromDb.Count += quantity;
+                UnitOfWork.ShoppingCart.Update(cartFromDb);
+                ToastService.ShowSuccess($"Added {quantity} more x \"{product.Title}\" to your box.");
+            }
+
+            UnitOfWork.Save();
+
+            // Refresh Cart Badge count
+            var totalCarts = UnitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId).Count();
+            CartState.SetCount(totalCarts);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Oops! An error occurred during cart placement.");
+        }
+        finally
+        {
+            isAddingToCart = false;
+        }
+    }
+}

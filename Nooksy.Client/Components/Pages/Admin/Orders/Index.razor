@@ -1,0 +1,130 @@
+@page "/admin/orders"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@using Nooksy.Client.Components.UI
+
+<PageTitle>Manage Orders - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="font-display fw-extrabold text-primary m-0">Orders</h2>
+    </div>
+
+    <!-- Status Filter Tabs -->
+    <div class="d-flex flex-wrap gap-2">
+        <button class="category-pill @(selectedStatus == null ? "active" : "")" @onclick="() => FilterByStatus(null)">
+            All
+        </button>
+        <button class="category-pill @(selectedStatus == SD.StatusPending ? "active" : "")" @onclick="() => FilterByStatus(SD.StatusPending)">
+            Pending
+        </button>
+        <button class="category-pill @(selectedStatus == SD.StatusApproved ? "active" : "")" @onclick="() => FilterByStatus(SD.StatusApproved)">
+            Approved
+        </button>
+        <button class="category-pill @(selectedStatus == SD.StatusInProcess ? "active" : "")" @onclick="() => FilterByStatus(SD.StatusInProcess)">
+            In Process
+        </button>
+        <button class="category-pill @(selectedStatus == SD.StatusShipped ? "active" : "")" @onclick="() => FilterByStatus(SD.StatusShipped)">
+            Shipped
+        </button>
+        <button class="category-pill @(selectedStatus == SD.StatusCancelled ? "active" : "")" @onclick="() => FilterByStatus(SD.StatusCancelled)">
+            Cancelled
+        </button>
+    </div>
+
+    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        @if (isLoading)
+        {
+            <LoadingSpinner Message="Checking order ledger..." />
+        }
+        else
+        {
+            <DataTable TItem="OrderHeader"
+                       Items="filteredOrders"
+                       PageSize="10"
+                       SearchPlaceholder="Search order # or customer..."
+                       SearchMatch="@((order, query) => order.Id.ToString().Contains(query) || (order.appUser?.Name?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))">
+                <HeaderTemplate>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Order Status</th>
+                    <th>Payment Status</th>
+                    <th class="text-end">Actions</th>
+                </HeaderTemplate>
+                <RowTemplate Context="order">
+                    <td class="fw-bold text-primary">#@order.Id</td>
+                    <td>@order.appUser?.Name</td>
+                    <td class="text-muted small">@order.OrderDate.ToString("MMM dd, yyyy")</td>
+                    <td class="fw-bold">$@order.OrderTotal.ToString("F2")</td>
+                    <td>
+                        <NooksyBadge Status="@order.OrderStatus" Text="@order.OrderStatus" />
+                    </td>
+                    <td>
+                        <NooksyBadge Status="@order.PaymentStatus" Text="@order.PaymentStatus" />
+                    </td>
+                    <td class="text-end">
+                        <a href="admin/orders/@order.Id" class="btn btn-sm btn-outline-primary" style="border-radius: var(--radius-sm);">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                    </td>
+                </RowTemplate>
+            </DataTable>
+        }
+    </div>
+</div>
+
+@code {
+    private List<OrderHeader> allOrders = new();
+    private List<OrderHeader> filteredOrders = new();
+    private string? selectedStatus = null;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        isLoading = true;
+        try
+        {
+            allOrders = UnitOfWork.orderHeader.GetAll(includeProperties: "appUser")
+                .OrderByDescending(o => o.OrderDate)
+                .ToList();
+
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve orders.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void FilterByStatus(string? status)
+    {
+        selectedStatus = status;
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (selectedStatus == null)
+        {
+            filteredOrders = allOrders.ToList();
+        }
+        else
+        {
+            filteredOrders = allOrders.Where(o => o.OrderStatus == selectedStatus).ToList();
+        }
+    }
+}

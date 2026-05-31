@@ -1,0 +1,134 @@
+@page "/admin/categories"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@using Nooksy.Client.Components.UI
+
+<PageTitle>Manage Categories - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="font-display fw-extrabold text-primary m-0">Book Categories</h2>
+        <a href="admin/categories/upsert" class="btn-nooksy btn-nooksy-primary py-2 fs-7" style="border-radius: var(--radius-sm);">
+            <i class="bi bi-plus-lg"></i> Create Category
+        </a>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        @if (isLoading)
+        {
+            <LoadingSpinner Message="Sorting the category drawers..." />
+        }
+        else
+        {
+            <DataTable TItem="Category"
+                       Items="categories"
+                       PageSize="10"
+                       SearchPlaceholder="Search category name..."
+                       SearchMatch="@((cat, query) => cat.Name.Contains(query, StringComparison.OrdinalIgnoreCase))">
+                <HeaderTemplate>
+                    <th>ID</th>
+                    <th>Category Name</th>
+                    <th>Display Order</th>
+                    <th class="text-end">Actions</th>
+                </HeaderTemplate>
+                <RowTemplate Context="cat">
+                    <td class="fw-bold text-primary">#@cat.Id</td>
+                    <td class="fw-bold">@cat.Name</td>
+                    <td><span class="badge bg-light text-dark font-display px-3 py-1">@cat.DisplayOrder</span></td>
+                    <td class="text-end">
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <a href="admin/categories/upsert/@cat.Id" class="btn btn-sm btn-outline-primary" style="border-radius: var(--radius-sm);" title="Edit Category">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(cat)"
+                                    style="border-radius: var(--radius-sm);" title="Delete Category">
+                                <i class="bi bi-trash3"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </RowTemplate>
+            </DataTable>
+        }
+    </div>
+</div>
+
+<!-- Modal confirmation box -->
+<NooksyModal Title="Delete Category?" IsOpen="isDeleteModalOpen" OnClose="CancelDelete">
+    <div class="text-center font-body py-2">
+        <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-3 d-block"></i>
+        <h5 class="font-display mb-2">Are you absolutely sure?</h5>
+        <p class="text-muted small">You are about to delete the category <strong>"@categoryToDelete?.Name"</strong>. This action is permanent and cannot be undone.</p>
+        
+        <div class="d-flex align-items-center justify-content-center gap-3 mt-4">
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Outline" OnClick="CancelDelete">Cancel</NooksyButton>
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Danger" OnClick="ExecuteDelete">Yes, Delete</NooksyButton>
+        </div>
+    </div>
+</NooksyModal>
+
+@code {
+    private List<Category> categories = new();
+    private bool isLoading = true;
+
+    private bool isDeleteModalOpen = false;
+    private Category? categoryToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        isLoading = true;
+        try
+        {
+            categories = UnitOfWork.Category.GetAll(orderBy: c => c.OrderBy(o => o.DisplayOrder)).ToList();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve categories list.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ConfirmDelete(Category cat)
+    {
+        categoryToDelete = cat;
+        isDeleteModalOpen = true;
+    }
+
+    private void CancelDelete()
+    {
+        categoryToDelete = null;
+        isDeleteModalOpen = false;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (categoryToDelete == null) return;
+
+        try
+        {
+            UnitOfWork.Category.Remove(categoryToDelete);
+            UnitOfWork.Save();
+            
+            ToastService.ShowSuccess($"Category \"{categoryToDelete.Name}\" was successfully deleted.");
+            isDeleteModalOpen = false;
+            categoryToDelete = null;
+            
+            await LoadCategories();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not delete category. Verify if it is currently tied to any catalog products.");
+        }
+    }
+}

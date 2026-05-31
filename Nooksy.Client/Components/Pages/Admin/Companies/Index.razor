@@ -1,0 +1,133 @@
+@page "/admin/companies"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@using Nooksy.Client.Components.UI
+
+<PageTitle>Manage Companies - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="font-display fw-extrabold text-primary m-0">Companies</h2>
+        <a href="admin/companies/upsert" class="btn-nooksy btn-nooksy-primary py-2 fs-7" style="border-radius: var(--radius-sm);">
+            <i class="bi bi-plus-lg"></i> Create Company
+        </a>
+    </div>
+
+    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        @if (isLoading)
+        {
+            <LoadingSpinner Message="Loading companies directory..." />
+        }
+        else
+        {
+            <DataTable TItem="Company"
+                       Items="companies"
+                       PageSize="10"
+                       SearchPlaceholder="Search company name..."
+                       SearchMatch="@((comp, query) => comp.Name.Contains(query, StringComparison.OrdinalIgnoreCase))">
+                <HeaderTemplate>
+                    <th>Name</th>
+                    <th>City</th>
+                    <th>State</th>
+                    <th>Phone</th>
+                    <th class="text-end">Actions</th>
+                </HeaderTemplate>
+                <RowTemplate Context="comp">
+                    <td class="fw-bold">@comp.Name</td>
+                    <td class="text-muted">@comp.City</td>
+                    <td>@comp.State</td>
+                    <td>@comp.PhoneNumber</td>
+                    <td class="text-end">
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <a href="admin/companies/upsert/@comp.Id" class="btn btn-sm btn-outline-primary" style="border-radius: var(--radius-sm);" title="Edit Company">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(comp)"
+                                    style="border-radius: var(--radius-sm);" title="Delete Company">
+                                <i class="bi bi-trash3"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </RowTemplate>
+            </DataTable>
+        }
+    </div>
+</div>
+
+<NooksyModal Title="Delete Company?" IsOpen="isDeleteModalOpen" OnClose="CancelDelete">
+    <div class="text-center font-body py-2">
+        <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-3 d-block"></i>
+        <h5 class="font-display mb-2">Are you absolutely sure?</h5>
+        <p class="text-muted small">You are about to delete <strong>"@companyToDelete?.Name"</strong>. This action is permanent.</p>
+
+        <div class="d-flex align-items-center justify-content-center gap-3 mt-4">
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Outline" OnClick="CancelDelete">Cancel</NooksyButton>
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Danger" OnClick="ExecuteDelete">Yes, Delete</NooksyButton>
+        </div>
+    </div>
+</NooksyModal>
+
+@code {
+    private List<Company> companies = new();
+    private bool isLoading = true;
+
+    private bool isDeleteModalOpen = false;
+    private Company? companyToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCompanies();
+    }
+
+    private async Task LoadCompanies()
+    {
+        isLoading = true;
+        try
+        {
+            companies = UnitOfWork.Company.GetAll().ToList();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve companies.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ConfirmDelete(Company comp)
+    {
+        companyToDelete = comp;
+        isDeleteModalOpen = true;
+    }
+
+    private void CancelDelete()
+    {
+        companyToDelete = null;
+        isDeleteModalOpen = false;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (companyToDelete == null) return;
+        try
+        {
+            UnitOfWork.Company.Remove(companyToDelete);
+            UnitOfWork.Save();
+
+            ToastService.ShowSuccess($"\"{companyToDelete.Name}\" was deleted successfully.");
+            isDeleteModalOpen = false;
+            companyToDelete = null;
+
+            await LoadCompanies();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not delete company. Check if users are associated with it.");
+        }
+    }
+}

@@ -1,0 +1,153 @@
+@page "/admin/users"
+@using Microsoft.AspNetCore.Identity
+@using Nooksy.Client.Components.UI
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject UserManager<ApplicationUser> UserManager
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Manage Users - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="font-display fw-extrabold text-primary m-0">User Management</h2>
+    </div>
+
+    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        @if (isLoading)
+        {
+            <LoadingSpinner Message="Loading user directory..." />
+        }
+        else
+        {
+            <DataTable TItem="ApplicationUser"
+                       Items="users"
+                       PageSize="10"
+                       SearchPlaceholder="Search name or email..."
+                       SearchMatch="@((u, query) => u.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || u.Email.Contains(query, StringComparison.OrdinalIgnoreCase))">
+                <HeaderTemplate>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Company</th>
+                    <th>Lock Status</th>
+                    <th class="text-end">Actions</th>
+                </HeaderTemplate>
+                <RowTemplate Context="user">
+                    <td class="fw-bold">@user.Name</td>
+                    <td class="text-muted small">@user.Email</td>
+                    <td>
+                        <span class="role-badge role-@GetRoleClass(user.Role)">@user.Role</span>
+                    </td>
+                    <td>
+                        @{
+                            var companyName = companies.FirstOrDefault(c => c.Id == user.CompanyId)?.Name ?? "-";
+                        }
+                        <span class="text-muted small">@companyName</span>
+                    </td>
+                    <td>
+                        @if (IsUserLocked(user))
+                        {
+                            <span class="nooksy-badge nooksy-badge-cancelled"><i class="bi bi-lock-fill me-1"></i> Locked</span>
+                        }
+                        else
+                        {
+                            <span class="nooksy-badge nooksy-badge-approved"><i class="bi bi-unlock-fill me-1"></i> Active</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <button type="button" class="btn btn-sm @(IsUserLocked(user) ? "btn-outline-success" : "btn-outline-warning")" 
+                                    @onclick="() => ToggleLock(user)"
+                                    style="border-radius: var(--radius-sm);">
+                                <i class="bi @(IsUserLocked(user) ? "bi-unlock" : "bi-lock")"></i>
+                                @(IsUserLocked(user) ? "Unlock" : "Lock")
+                            </button>
+                        </div>
+                    </td>
+                </RowTemplate>
+            </DataTable>
+        }
+    </div>
+</div>
+
+@code {
+    private List<ApplicationUser> users = new();
+    private List<Company> companies = new();
+    private Dictionary<string, string> userRoles = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        try
+        {
+            companies = UnitOfWork.Company.GetAll().ToList();
+
+            var allUsers = UnitOfWork.ApplicationUser.GetAll().ToList();
+            users = new();
+
+            foreach (var user in allUsers)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                user.Role = roles.FirstOrDefault() ?? "Customer";
+                users.Add(user);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve users.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetRoleClass(string role)
+    {
+        return role?.ToLower() switch
+        {
+            "admin" => "admin",
+            "customer" => "customer",
+            "company" => "company",
+            "employee" => "employee",
+            _ => "customer"
+        };
+    }
+
+    private bool IsUserLocked(ApplicationUser user)
+    {
+        var lockoutEnd = user.LockoutEnd;
+        return lockoutEnd != null && lockoutEnd > DateTimeOffset.UtcNow;
+    }
+
+    private async Task ToggleLock(ApplicationUser user)
+    {
+        try
+        {
+            if (IsUserLocked(user))
+            {
+                await UserManager.SetLockoutEndDateAsync(user, null);
+                ToastService.ShowSuccess($"User \"{user.Name}\" has been unlocked.");
+            }
+            else
+            {
+                await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+                ToastService.ShowWarning($"User \"{user.Name}\" has been locked.");
+            }
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not update lock status.");
+        }
+    }
+}

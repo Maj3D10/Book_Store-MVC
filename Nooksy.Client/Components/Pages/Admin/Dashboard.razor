@@ -1,0 +1,183 @@
+@page "/admin/dashboard"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+
+<PageTitle>Admin Dashboard - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="font-display fw-extrabold text-primary m-0">Admin Dashboard</h2>
+        <span class="text-muted small">Real-time bookstore analytics</span>
+    </div>
+
+    <!-- Low-stock Alert banner if products have 0 images -->
+    @if (productsWithNoImages.Any())
+    {
+        <Nooksy.Client.Components.UI.NooksyAlert Type="Warning" Dismissible="true">
+            <h6 class="m-0 font-display fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Asset Coverage Alert!</h6>
+            <p class="m-0 text-xs text-muted mt-1">
+                There are <strong>@productsWithNoImages.Count</strong> books with zero uploaded cover images. Add images in the Product CRUD to ensure they display on the storefront.
+            </p>
+        </Nooksy.Client.Components.UI.NooksyAlert>
+    }
+
+    <!-- Stat cards row -->
+    <div class="row g-3">
+        <!-- Total Orders Card -->
+        <div class="col-12 col-sm-6 col-lg-3 animate-fade-in" style="animation-delay: 0s;">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-primary">
+                    <i class="bi bi-cart-check"></i>
+                </div>
+                <div>
+                    <h3 class="m-0 font-display fw-extrabold text-primary">@totalOrders</h3>
+                    <span class="text-text-muted small font-body">Total Orders</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Card -->
+        <div class="col-12 col-sm-6 col-lg-3 animate-fade-in" style="animation-delay: 0.1s;">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-success">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div>
+                    <h3 class="m-0 font-display fw-extrabold text-success">$@totalRevenue.ToString("N2")</h3>
+                    <span class="text-text-muted small font-body">Revenue</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Card -->
+        <div class="col-12 col-sm-6 col-lg-3 animate-fade-in" style="animation-delay: 0.2s;">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-accent">
+                    <i class="bi bi-journal-album"></i>
+                </div>
+                <div>
+                    <h3 class="m-0 font-display fw-extrabold text-accent">@totalProducts</h3>
+                    <span class="text-text-muted small font-body">Total Products</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Card -->
+        <div class="col-12 col-sm-6 col-lg-3 animate-fade-in" style="animation-delay: 0.3s;">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-warning">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <h3 class="m-0 font-display fw-extrabold text-warning">@totalUsers</h3>
+                    <span class="text-text-muted small font-body">Active Users</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders Table (Last 10) -->
+    <div class="nooksy-card p-4 bg-white mt-2" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Recent Orders</h4>
+        
+        <div class="table-responsive">
+            <table class="table align-middle nooksy-table m-0 small font-body">
+                <thead>
+                    <tr>
+                        <th>Order#</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (recentOrders == null || !recentOrders.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No recent orders found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var order in recentOrders)
+                        {
+                            <tr>
+                                <td class="fw-bold text-primary">#@order.Id</td>
+                                <td>@order.appUser?.Name</td>
+                                <td>@order.OrderDate.ToString("d")</td>
+                                <td class="fw-bold">$@order.OrderTotal.ToString("F2")</td>
+                                <td>
+                                    <Nooksy.Client.Components.UI.NooksyBadge Status="@order.OrderStatus" Text="@order.OrderStatus" />
+                                </td>
+                                <td>
+                                    <Nooksy.Client.Components.UI.NooksyBadge Status="@order.PaymentStatus" Text="@order.PaymentStatus" />
+                                </td>
+                                <td>
+                                    <a href="admin/orders/@order.Id" class="btn btn-sm btn-outline-primary" style="border-radius: var(--radius-sm);">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-fade-in {
+        animation: cardFade 0.4s ease both;
+    }
+    @@keyframes cardFade {
+        from { transform: translateY(10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+@code {
+    private int totalOrders = 0;
+    private double totalRevenue = 0;
+    private int totalProducts = 0;
+    private int totalUsers = 0;
+
+    private List<OrderHeader> recentOrders = new();
+    private List<Product> productsWithNoImages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            totalOrders = UnitOfWork.orderHeader.GetAll().Count();
+            
+            var approvedOrders = UnitOfWork.orderHeader.GetAll(u => u.PaymentStatus == SD.PaymentStatusApproved || u.PaymentStatus == SD.PaymentStatusDelayedPayment);
+            totalRevenue = approvedOrders.Sum(u => u.OrderTotal);
+            
+            totalProducts = UnitOfWork.Product.GetAll().Count();
+            totalUsers = UnitOfWork.ApplicationUser.GetAll().Count();
+
+            // Recent 10 orders
+            recentOrders = UnitOfWork.orderHeader.GetAll(includeProperties: "appUser").OrderByDescending(u => u.OrderDate).Take(10).ToList();
+
+            // Analyze products for low-stock covers
+            var allProducts = UnitOfWork.Product.GetAll(includeProperties: "ProductImages").ToList();
+            var allImages = UnitOfWork.ProductImage.GetAll().ToList();
+            foreach (var prod in allProducts)
+            {
+                prod.ProductImages = allImages.Where(i => i.ProductId == prod.Id).ToList();
+            }
+
+            productsWithNoImages = allProducts.Where(p => p.ProductImages == null || !p.ProductImages.Any()).ToList();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve dashboard statistics.");
+        }
+    }
+}

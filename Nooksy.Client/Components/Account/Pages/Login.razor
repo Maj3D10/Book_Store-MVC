@@ -1,0 +1,140 @@
+@page "/Account/Login"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Nooksy.Client.Data
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Log In - Nooksy</PageTitle>
+
+<div class="container py-5 d-flex align-items-center justify-content-center min-vh-100">
+    <div class="nooksy-card p-4 p-md-5 bg-white w-100 shadow-lg text-center" style="max-width: 440px; border-radius: var(--radius-lg); border-color: var(--color-border); border-width: 2px;">
+        
+        <!-- Logo and Heading -->
+        <div class="mb-4">
+            <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-2">
+                <circle cx="20" cy="20" r="20" fill="#4AABDB"/>
+                <path d="M12 28C12 21.3726 17.3726 16 24 16H28V28H12Z" fill="#E87D7D"/>
+            </svg>
+            <h2 class="font-display fw-extrabold text-primary m-0 fs-3">Welcome Back!</h2>
+            <p class="text-muted small font-body mt-1">Log in to check your reading box and download ebooks.</p>
+        </div>
+
+        <StatusMessage Message="@errorMessage" />
+
+        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
+            
+            <ValidationSummary class="text-danger small mb-3" role="alert" />
+
+            <div class="d-flex flex-column gap-3 text-start small font-body mb-3">
+                <!-- Email Input -->
+                <div>
+                    <label class="form-label fw-bold text-primary">Email Address</label>
+                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.Email" class="text-danger small" />
+                </div>
+                
+                <!-- Password Input -->
+                <div>
+                    <label class="form-label fw-bold text-primary">Password</label>
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" placeholder="******" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.Password" class="text-danger small" />
+                </div>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="form-check text-start mb-4 small font-body">
+                <InputCheckbox @bind-Value="Input.RememberMe" class="form-check-input" id="rememberMeCheck" />
+                <label class="form-check-label text-text-muted fw-bold" for="rememberMeCheck">
+                    Keep me logged in
+                </label>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="mb-4">
+                <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Primary" 
+                              Size="lg" 
+                              Type="submit"
+                              Class="w-100 py-3 shadow-md border-0 rounded-pill">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Log In
+                </Nooksy.Client.Components.UI.NooksyButton>
+            </div>
+
+            <!-- Links -->
+            <div class="d-flex flex-column gap-2 small font-body">
+                <a href="Account/ForgotPassword" class="text-accent fw-bold text-decoration-none">Forgot your password?</a>
+                <hr class="my-2 text-muted opacity-25">
+                <span class="text-muted">Don't have an account? <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="text-primary fw-bold text-decoration-none ms-1">Register here</a></span>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ReturnUrl ??= "/";
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    public async Task LoginUser()
+    {
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in.");
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
+        else if (result.RequiresTwoFactor)
+        {
+            RedirectManager.RedirectTo(
+                "Account/LoginWith2fa",
+                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+        }
+        else if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            errorMessage = "Error: Invalid login attempt.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

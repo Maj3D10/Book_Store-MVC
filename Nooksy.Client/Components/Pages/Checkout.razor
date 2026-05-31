@@ -1,0 +1,316 @@
+@page "/checkout"
+@attribute [Authorize]
+@inject IUnitOfWork UnitOfWork
+@inject AuthenticationStateProvider AuthStateProvider
+@inject Nooksy.Client.State.CartState CartState
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+@using System.Security.Claims
+@using Stripe.Checkout
+
+<PageTitle>Checkout - Nooksy</PageTitle>
+
+<div class="container-xxl py-5 text-start">
+    <a href="cart" class="btn btn-sm btn-link text-decoration-none text-muted font-display fw-bold mb-4 p-0">
+        <i class="bi bi-arrow-left me-2"></i> Back to Cart
+    </a>
+
+    <h1 class="font-display fw-extrabold text-primary mb-4">Checkout Box</h1>
+
+    @if (isLoading)
+    {
+        <Nooksy.Client.Components.UI.LoadingSpinner Message="Preparing your parcel invoice..." />
+    }
+    else if (!cartList.Any())
+    {
+        <div class="text-center py-5 nooksy-card p-5 bg-white max-width-600 mx-auto" style="max-width: 550px;">
+            <i class="bi bi-exclamation-triangle fs-1 text-warning mb-3"></i>
+            <h3 class="font-display text-primary">No items to checkout</h3>
+            <p class="text-muted mb-4">Your cart is empty. Please select books before checking out.</p>
+            <a href="" class="btn-nooksy btn-nooksy-primary">Start Shopping</a>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="orderHeader" OnValidSubmit="PlaceOrder">
+            <DataAnnotationsValidator />
+            
+            <div class="row g-4">
+                <!-- Left: Shipping Form -->
+                <div class="col-12 col-lg-7">
+                    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                        <h4 class="font-display fw-bold text-primary mb-4 border-bottom pb-2"><i class="bi bi-truck me-2 text-accent"></i> Shipping Details</h4>
+                        
+                        <div class="row g-3 font-body small">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold text-primary">Recipient Name</label>
+                                <InputText class="form-control" @bind-Value="orderHeader.Name" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => orderHeader.Name" class="text-danger small mt-1" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold text-primary">Phone Number</label>
+                                <InputText class="form-control" @bind-Value="orderHeader.PhoneNumber" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => orderHeader.PhoneNumber" class="text-danger small mt-1" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-primary">Street Address</label>
+                                <InputText class="form-control" @bind-Value="orderHeader.StreetAddress" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => orderHeader.StreetAddress" class="text-danger small mt-1" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-bold text-primary">City</label>
+                                <InputText class="form-control" @bind-Value="orderHeader.City" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => orderHeader.City" class="text-danger small mt-1" />
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-bold text-primary">State</label>
+                                <InputText class="form-control" @bind-Value="orderHeader.State" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => orderHeader.State" class="text-danger small mt-1" />
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-bold text-primary">Postal Code</label>
+                                <InputText class="form-control" @bind-Value="orderHeader.PostalCode" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => orderHeader.PostalCode" class="text-danger small mt-1" />
+                            </div>
+                        </div>
+
+                        <!-- B2B Account Pay Later indicator badge -->
+                        @if (isCompanyUser)
+                        {
+                            <div class="mt-4 p-3 bg-success bg-opacity-10 text-success rounded-lg d-flex align-items-center gap-2 border border-success border-opacity-25" style="border-radius: var(--radius-md);">
+                                <i class="bi bi-briefcase-fill fs-4"></i>
+                                <div>
+                                    <strong class="font-display d-block">B2B Company Account Detected!</strong>
+                                    <span class="small font-body">As a corporate member, you enjoy net-30 terms. Immediate payment is waived; choose "Place B2B Order" to purchase now and pay within 30 days of shipping.</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Right: Summary & Checkout button -->
+                <div class="col-12 col-lg-5">
+                    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                        <h4 class="font-display fw-bold text-primary mb-4 border-bottom pb-2"><i class="bi bi-journal-bookmark me-2 text-accent"></i> Order Summary</h4>
+                        
+                        <div class="d-flex flex-column gap-3 mb-4" style="max-height: 240px; overflow-y: auto;">
+                            @foreach (var cart in cartList)
+                            {
+                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                    <div class="text-start">
+                                        <span class="font-display fw-bold text-primary d-block small">@cart.Product.Title</span>
+                                        <span class="text-muted small font-body">@cart.Count copies x $@cart.Price.ToString("F2")</span>
+                                    </div>
+                                    <span class="font-body fw-bold text-primary flex-shrink-0">$@((cart.Price * cart.Count).ToString("F2"))</span>
+                                </div>
+                            }
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+                        
+                        <div class="d-flex justify-content-between align-items-baseline mb-4">
+                            <span class="fs-5 text-primary font-display fw-bold">Grand Total:</span>
+                            <span class="fs-3 fw-extrabold text-accent font-display">$@orderHeader.OrderTotal.ToString("F2")</span>
+                        </div>
+
+                        <!-- Validation Summary -->
+                        <div class="mb-3 text-start">
+                            <ValidationSummary class="text-danger small" />
+                        </div>
+
+                        <!-- CTA Place Order Button -->
+                        <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Primary" 
+                                      Size="lg" 
+                                      Type="submit"
+                                      Class="w-100 py-3 rounded-pill shadow-md border-0"
+                                      IsLoading="isProcessingOrder">
+                            @if (isCompanyUser)
+                            {
+                                <span><i class="bi bi-briefcase-fill me-1"></i> Place B2B Order</span>
+                            }
+                            else
+                            {
+                                <span><i class="bi bi-credit-card-2-front-fill me-1"></i> Pay with Credit Card</span>
+                            }
+                        </Nooksy.Client.Components.UI.NooksyButton>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private List<ShoppingCart> cartList = new();
+    private OrderHeader orderHeader = new();
+    
+    private bool isCompanyUser = false;
+    private bool isLoading = true;
+    private bool isProcessingOrder = false;
+    private string userId = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                // Fetch shopping cart items
+                cartList = UnitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId, includeProperties: "Product").ToList();
+                
+                // Fetch profile user details to populate fields
+                var appUser = UnitOfWork.ApplicationUser.Get(u => u.Id == userId);
+                isCompanyUser = appUser.CompanyId.GetValueOrDefault() > 0;
+
+                // Load product images and compute unit prices
+                var productImages = UnitOfWork.ProductImage.GetAll().ToList();
+                foreach (var cart in cartList)
+                {
+                    cart.Product.ProductImages = productImages.Where(u => u.ProductId == cart.Product.Id).ToList();
+                    cart.Price = PricingRules.GetPriceBasedOnQuantity(cart.Product, cart.Count);
+                    orderHeader.OrderTotal += (cart.Price * cart.Count);
+                }
+
+                // Hydrate shipping details
+                orderHeader.Name = appUser.Name;
+                orderHeader.PhoneNumber = appUser.PhoneNumber;
+                orderHeader.StreetAddress = appUser.StreetAddress;
+                orderHeader.City = appUser.City;
+                orderHeader.State = appUser.State;
+                orderHeader.PostalCode = appUser.PostalCode;
+                orderHeader.ApplicationUserId = userId;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not configure checkout details.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task PlaceOrder()
+    {
+        if (isProcessingOrder) return;
+        isProcessingOrder = true;
+
+        try
+        {
+            orderHeader.OrderDate = DateTime.Now;
+            
+            // Set order statuses
+            if (isCompanyUser)
+            {
+                orderHeader.OrderStatus = SD.StatusApproved;
+                orderHeader.PaymentStatus = SD.PaymentStatusDelayedPayment;
+            }
+            else
+            {
+                orderHeader.OrderStatus = SD.StatusPending;
+                orderHeader.PaymentStatus = SD.PaymentStatusPending;
+            }
+
+            // Create Order Header in Db
+            UnitOfWork.orderHeader.Add(orderHeader);
+            UnitOfWork.Save();
+
+            // Create Order Details in Db
+            foreach (var cart in cartList)
+            {
+                var orderDetail = new OrderDetail
+                {
+                    ProductId = cart.ProductId,
+                    OrderHeaderId = orderHeader.Id,
+                    Price = cart.Price,
+                    Count = cart.Count
+                };
+                UnitOfWork.orderDetail.Add(orderDetail);
+            }
+            UnitOfWork.Save();
+
+            // Payment Routing
+            if (isCompanyUser)
+            {
+                // B2B direct approval - clear cart items and redirect to success
+                var shoppingCarts = UnitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId).ToList();
+                UnitOfWork.ShoppingCart.RemoveRange(shoppingCarts);
+                UnitOfWork.Save();
+                
+                // Update badge
+                CartState.SetCount(0);
+                
+                ToastService.ShowSuccess("B2B order successfully placed!");
+                NavigationManager.NavigateTo($"order/confirmation/{orderHeader.Id}");
+            }
+            else
+            {
+                // Regular customer - setup Stripe checkout
+                var secretKey = Configuration.GetSection("Stripe:SecretKey").Get<string>();
+                if (string.IsNullOrEmpty(secretKey))
+                {
+                    throw new InvalidOperationException("Stripe API key must be configured in configuration.");
+                }
+
+                // Dynamically fetch base URL of current application
+                var baseUrl = Configuration.GetSection("Checkout:BaseUrl").Get<string>();
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = NavigationManager.BaseUri;
+                }
+                baseUrl = baseUrl.TrimEnd('/') + "/";
+
+                var stripeOptions = new SessionCreateOptions
+                {
+                    SuccessUrl = $"{baseUrl}order/confirmation/{orderHeader.Id}",
+                    CancelUrl = $"{baseUrl}cart",
+                    LineItems = new List<SessionLineItemOptions>(),
+                    Mode = "payment"
+                };
+
+                foreach (var cart in cartList)
+                {
+                    var lineItem = new SessionLineItemOptions
+                    {
+                        PriceData = new SessionLineItemPriceDataOptions
+                        {
+                            UnitAmount = (long)(cart.Price * 100), // convert to cents
+                            Currency = "usd",
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name = cart.Product.Title
+                            }
+                        },
+                        Quantity = cart.Count
+                    };
+                    stripeOptions.LineItems.Add(lineItem);
+                }
+
+                var service = new SessionService();
+                var session = service.Create(stripeOptions);
+
+                // Update order with Stripe Session properties
+                UnitOfWork.orderHeader.UpdateStripePaymentID(orderHeader.Id, session.Id, session.PaymentIntentId);
+                UnitOfWork.Save();
+
+                // Force load browser to the Stripe checkout page!
+                NavigationManager.NavigateTo(session.Url, forceLoad: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not place order. Please verify shipping info and Stripe settings.");
+        }
+        finally
+        {
+            isProcessingOrder = false;
+        }
+    }
+}

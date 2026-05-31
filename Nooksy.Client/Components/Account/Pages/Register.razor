@@ -1,0 +1,275 @@
+@page "/Account/Register"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Nooksy.Client.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject IUnitOfWork UnitOfWork
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Create an Account - Nooksy</PageTitle>
+
+<div class="container py-5 d-flex align-items-center justify-content-center min-vh-100">
+    <div class="nooksy-card p-4 p-md-5 bg-white w-100 shadow-lg" style="max-width: 650px; border-radius: var(--radius-lg); border-color: var(--color-border); border-width: 2px;">
+        <!-- Logo and Heading -->
+        <div class="text-center mb-4">
+            <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-2">
+                <circle cx="20" cy="20" r="20" fill="#4AABDB"/>
+                <path d="M12 28C12 21.3726 17.3726 16 24 16H28V28H12Z" fill="#E87D7D"/>
+            </svg>
+            <h2 class="font-display fw-extrabold text-primary m-0 fs-3">Join Nooksy Box!</h2>
+            <p class="text-muted small font-body mt-1">Create your friendly bookstore profile to start downloading ebooks.</p>
+        </div>
+
+        <StatusMessage Message="@Message" />
+
+        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+            <DataAnnotationsValidator />
+            
+            <ValidationSummary class="text-danger small mb-3" role="alert" />
+
+            <div class="row g-3 text-start small font-body">
+                <!-- Email & Passwords -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-primary">Email Address</label>
+                    <InputText @bind-Value="Input.Email" class="form-control" placeholder="name@example.com" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.Email" class="text-danger small" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-primary">Full Name</label>
+                    <InputText @bind-Value="Input.Name" class="form-control" placeholder="Jane Doe" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.Name" class="text-danger small" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-primary">Password</label>
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" placeholder="******" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.Password" class="text-danger small" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-primary">Confirm Password</label>
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" placeholder="******" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger small" />
+                </div>
+
+                <!-- Profile Custom details -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-primary">Phone Number</label>
+                    <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="(555) 000-0000" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.PhoneNumber" class="text-danger small" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-primary">Role Selector</label>
+                    <InputSelect @bind-Value="Input.Role" class="form-select" style="border-radius: var(--radius-sm);">
+                        <option value="@SD.Role_Customer">Customer (Individual)</option>
+                        <option value="@SD.Role_Company">Company Account (B2B terms)</option>
+                    </InputSelect>
+                    <ValidationMessage For="() => Input.Role" class="text-danger small" />
+                </div>
+
+                @if (Input.Role == SD.Role_Company)
+                {
+                    <div class="col-12 animate-fade">
+                        <label class="form-label fw-bold text-primary">Select B2B Company</label>
+                        <InputSelect @bind-Value="Input.CompanyId" class="form-select" style="border-radius: var(--radius-sm);">
+                            <option value="">-- Choose Corporate Company --</option>
+                            @foreach (var company in companies)
+                            {
+                                <option value="@company.Id">@company.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => Input.CompanyId" class="text-danger small" />
+                    </div>
+                }
+
+                <div class="col-12">
+                    <label class="form-label fw-bold text-primary">Street Address</label>
+                    <InputText @bind-Value="Input.StreetAddress" class="form-control" placeholder="123 Playful Ave" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.StreetAddress" class="text-danger small" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-bold text-primary">City</label>
+                    <InputText @bind-Value="Input.City" class="form-control" placeholder="Chicago" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.City" class="text-danger small" />
+                </div>
+                <div class="col-6 col-md-4">
+                    <label class="form-label fw-bold text-primary">State</label>
+                    <InputText @bind-Value="Input.State" class="form-control" placeholder="IL" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.State" class="text-danger small" />
+                </div>
+                <div class="col-6 col-md-4">
+                    <label class="form-label fw-bold text-primary">Postal Code</label>
+                    <InputText @bind-Value="Input.PostalCode" class="form-control" placeholder="12345" style="border-radius: var(--radius-sm);" />
+                    <ValidationMessage For="() => Input.PostalCode" class="text-danger small" />
+                </div>
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="mt-4">
+                <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Primary" 
+                              Size="lg" 
+                              Type="submit"
+                              Class="w-100 py-3 shadow-md border-0 rounded-pill">
+                    <i class="bi bi-person-plus-fill me-1"></i> Register Account
+                </Nooksy.Client.Components.UI.NooksyButton>
+            </div>
+        </EditForm>
+
+        <div class="text-center mt-4 small font-body text-muted">
+            Already registered? <a href="Account/Login" class="text-accent fw-bold text-decoration-none ms-1">Log in here</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-fade {
+        animation: fadeIn 0.3s ease;
+    }
+</style>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+    private List<Company> companies = new();
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+
+    protected override void OnInitialized()
+    {
+        ReturnUrl ??= "/";
+        // Fetch B2B Companies list
+        companies = UnitOfWork.Company.GetAll().ToList();
+        
+        // Default role is Customer
+        Input.Role ??= SD.Role_Customer;
+    }
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = CreateUser();
+
+        // Populate fields
+        user.Name = Input.Name;
+        user.PhoneNumber = Input.PhoneNumber;
+        user.StreetAddress = Input.StreetAddress;
+        user.City = Input.City;
+        user.State = Input.State;
+        user.PostalCode = Input.PostalCode;
+        user.Role = Input.Role;
+        if (Input.Role == SD.Role_Company)
+        {
+            user.CompanyId = Input.CompanyId;
+        }
+
+        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        var emailStore = GetEmailStore();
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+        {
+            identityErrors = result.Errors;
+            return;
+        }
+
+        Logger.LogInformation("User created a new account with password.");
+
+        // Create roles in DB if not existing, then assign
+        if (!await RoleManager.RoleExistsAsync(Input.Role))
+        {
+            await RoleManager.CreateAsync(new IdentityRole(Input.Role));
+        }
+        await UserManager.AddToRoleAsync(user, Input.Role);
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            RedirectManager.RedirectTo(
+                "Account/RegisterConfirmation",
+                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+        }
+
+        await SignInManager.SignInAsync(user, isPersistent: false);
+        RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("The default UI requires a user store with email support.");
+        }
+        return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Full Name")]
+        public string Name { get; set; } = "";
+
+        public string? PhoneNumber { get; set; }
+        public string? StreetAddress { get; set; }
+        public string? City { get; set; }
+        public string? State { get; set; }
+        public string? PostalCode { get; set; }
+
+        [Required]
+        public string Role { get; set; } = "";
+
+        public int? CompanyId { get; set; }
+    }
+}

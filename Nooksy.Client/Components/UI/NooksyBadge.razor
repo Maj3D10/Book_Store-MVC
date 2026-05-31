@@ -1,0 +1,25 @@
+<span class="nooksy-badge nooksy-badge-@GetStatusClass()">
+    @Text
+</span>
+
+@code {
+    [Parameter] public string Status { get; set; } = "";
+    [Parameter] public string Text { get; set; } = "";
+
+    private string GetStatusClass()
+    {
+        if (string.IsNullOrWhiteSpace(Status)) return "pending";
+        return Status.ToLower() switch
+        {
+            "pending" => "pending",
+            "approved" => "approved",
+            "processing" => "inprocess",
+            "inprocess" => "inprocess",
+            "shipped" => "shipped",
+            "cancelled" => "cancelled",
+            "refunded" => "refunded",
+            "approvedfordelayedpayment" => "approved", // company B2B status maps to light teal
+            _ => "pending"
+        };
+    }
+}

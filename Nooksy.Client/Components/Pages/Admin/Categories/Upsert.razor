@@ -1,0 +1,90 @@
+@page "/admin/categories/upsert"
+@page "/admin/categories/upsert/{id:int}"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(category.Id == 0 ? "Create Category" : "Edit Category") - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start" style="max-width: 600px;">
+    <div>
+        <a href="admin/categories" class="btn btn-sm btn-link text-decoration-none text-muted font-display fw-bold p-0 mb-3">
+            <i class="bi bi-arrow-left me-2"></i> Back to Categories
+        </a>
+        <h2 class="font-display fw-extrabold text-primary m-0">
+            @(category.Id == 0 ? "Create Category" : "Edit Category")
+        </h2>
+    </div>
+
+    <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+        <EditForm Model="category" OnValidSubmit="SaveCategory">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger small mb-3" />
+
+            <div class="d-flex flex-column gap-3 font-body small">
+                <div>
+                    <label class="form-label fw-bold text-primary">Category Name</label>
+                    <InputText @bind-Value="category.Name" class="form-control" placeholder="e.g. Science Fiction" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                    <ValidationMessage For="() => category.Name" class="text-danger small" />
+                </div>
+                <div>
+                    <label class="form-label fw-bold text-primary">Display Order</label>
+                    <InputNumber @bind-Value="category.DisplayOrder" class="form-control" placeholder="1" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                    <ValidationMessage For="() => category.DisplayOrder" class="text-danger small" />
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 mt-4">
+                <NooksyButton Variant="NooksyButtonVariant.Primary" Type="submit" IsLoading="isSaving">
+                    <i class="bi bi-check-lg me-1"></i> @(category.Id == 0 ? "Create Category" : "Update Category")
+                </NooksyButton>
+                <a href="admin/categories" class="btn-nooksy btn-nooksy-outline">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Category category = new();
+    private bool isSaving = false;
+
+    protected override void OnInitialized()
+    {
+        if (Id != 0)
+        {
+            category = UnitOfWork.Category.Get(u => u.Id == Id);
+        }
+    }
+
+    private async Task SaveCategory()
+    {
+        isSaving = true;
+        try
+        {
+            if (category.Id == 0)
+            {
+                UnitOfWork.Category.Add(category);
+                ToastService.ShowSuccess($"Category \"{category.Name}\" created successfully!");
+            }
+            else
+            {
+                UnitOfWork.Category.Update(category);
+                ToastService.ShowSuccess($"Category \"{category.Name}\" updated successfully!");
+            }
+            UnitOfWork.Save();
+            NavigationManager.NavigateTo("admin/categories");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not save category. Please try again.");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

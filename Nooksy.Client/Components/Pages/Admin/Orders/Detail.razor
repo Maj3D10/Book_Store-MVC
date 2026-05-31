@@ -1,0 +1,304 @@
+@page "/admin/orders/{id:int}"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+@using Nooksy.Client.Components.UI
+
+<PageTitle>Order #@Id Details - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div>
+        <a href="admin/orders" class="btn btn-sm btn-link text-decoration-none text-muted font-display fw-bold p-0 mb-3">
+            <i class="bi bi-arrow-left me-2"></i> Back to Orders
+        </a>
+        <h2 class="font-display fw-extrabold text-primary m-0">
+            Order <span class="text-accent">#@Id</span>
+        </h2>
+    </div>
+
+    @if (isLoading)
+    {
+        <LoadingSpinner Message="Unfolding order details..." />
+    }
+    else if (orderHeader == null)
+    {
+        <div class="text-center py-5 nooksy-card p-5 bg-white" style="max-width: 500px; margin: 0 auto;">
+            <i class="bi bi-x-circle fs-1 text-danger mb-3"></i>
+            <h3 class="font-display text-primary">Order not found</h3>
+            <a href="admin/orders" class="btn-nooksy btn-nooksy-primary mt-3">Return to Orders</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Left: Order Info -->
+            <div class="col-12 col-lg-8 d-flex flex-column gap-4">
+                <!-- Customer & Shipping Card -->
+                <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Customer & Shipping</h4>
+                    <div class="row g-3 small font-body">
+                        <div class="col-12 col-md-6">
+                            <strong class="d-block text-primary">Customer</strong>
+                            <span>@orderHeader.appUser?.Name</span><br />
+                            <span class="text-muted">@orderHeader.appUser?.Email</span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <strong class="d-block text-primary">Shipping Address</strong>
+                            <span>@orderHeader.StreetAddress</span><br />
+                            <span>@orderHeader.City, @orderHeader.State @orderHeader.PostalCode</span><br />
+                            <span class="text-muted">Phone: @orderHeader.PhoneNumber</span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <strong class="d-block text-primary">Order Dates</strong>
+                            <span>Ordered: @orderHeader.OrderDate.ToString("F")</span><br />
+                            <span>Shipped: @(orderHeader.ShippingDate == default ? "Not shipped" : orderHeader.ShippingDate.ToString("F"))</span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <strong class="d-block text-primary">Carrier Info</strong>
+                            <span>Carrier: @(orderHeader.Carrier ?? "N/A")</span><br />
+                            <span>Tracking: @(orderHeader.TrackingNumber ?? "N/A")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items Table -->
+                <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Order Items</h4>
+                    <div class="table-responsive">
+                        <table class="table align-middle nooksy-table m-0 small font-body">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Line Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in orderDetails)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded overflow-hidden" style="width: 36px; height: 48px; background: #eef5fa; flex-shrink: 0;">
+                                                    @if (item.product?.ProductImages != null && item.product.ProductImages.Any())
+                                                    {
+                                                        <img src="@item.product.ProductImages.First().ImageUrl" class="w-100 h-100" style="object-fit: cover;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-book"></i></div>
+                                                    }
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block">@item.product?.Title</strong>
+                                                    <span class="text-muted">By @item.product?.Author</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center fw-bold">@item.Count</td>
+                                        <td class="text-end">$@item.Price.ToString("F2")</td>
+                                        <td class="text-end fw-bold text-primary">$@((item.Price * item.Count).ToString("F2"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold font-display text-primary fs-5">Order Total:</td>
+                                    <td class="text-end fw-bold font-display text-accent fs-5">$@orderHeader.OrderTotal.ToString("F2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Status & Actions -->
+            <div class="col-12 col-lg-4 d-flex flex-column gap-4">
+                <!-- Status Badges -->
+                <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Current Status</h4>
+                    <div class="d-flex flex-column gap-3">
+                        <div>
+                            <span class="d-block text-muted small mb-1">Order Status</span>
+                            <NooksyBadge Status="@orderHeader.OrderStatus" Text="@orderHeader.OrderStatus" />
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small mb-1">Payment Status</span>
+                            <NooksyBadge Status="@orderHeader.PaymentStatus" Text="@orderHeader.PaymentStatus" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(orderHeader.SessionId))
+                        {
+                            <div>
+                                <span class="d-block text-muted small mb-1">Stripe Session ID</span>
+                                <code class="small text-break">@orderHeader.SessionId</code>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(orderHeader.PaymentIntenId))
+                        {
+                            <div>
+                                <span class="d-block text-muted small mb-1">Payment Intent ID</span>
+                                <code class="small text-break">@orderHeader.PaymentIntenId</code>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Actions</h4>
+                    <div class="d-flex flex-column gap-3">
+                        @if (orderHeader.OrderStatus == SD.StatusApproved || orderHeader.OrderStatus == SD.StatusPending)
+                        {
+                            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Primary" Class="w-100" OnClick="StartProcessing">
+                                <i class="bi bi-play-fill me-1"></i> Start Processing
+                            </NooksyButton>
+                        }
+
+                        @if (orderHeader.OrderStatus == SD.StatusInProcess)
+                        {
+                            <div class="small">
+                                <label class="form-label fw-bold text-primary">Carrier</label>
+                                <input type="text" @bind="carrier" class="form-control mb-2" placeholder="Carrier name" style="border-radius: var(--radius-sm);" />
+                                <label class="form-label fw-bold text-primary">Tracking Number</label>
+                                <input type="text" @bind="trackingNumber" class="form-control mb-3" placeholder="Tracking #" style="border-radius: var(--radius-sm);" />
+                            </div>
+                            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Primary" Class="w-100" OnClick="ShipOrder">
+                                <i class="bi bi-truck me-1"></i> Ship Order
+                            </NooksyButton>
+                        }
+
+                        @if (orderHeader.OrderStatus != SD.StatusCancelled && orderHeader.OrderStatus != SD.StatusRefunded && orderHeader.OrderStatus != SD.StatusShipped)
+                        {
+                            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Danger" Class="w-100" OnClick="CancelOrder">
+                                <i class="bi bi-x-circle me-1"></i> Cancel Order
+                            </NooksyButton>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private OrderHeader? orderHeader;
+    private List<OrderDetail> orderDetails = new();
+    private bool isLoading = true;
+
+    private string carrier = "";
+    private string trackingNumber = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrder();
+    }
+
+    private async Task LoadOrder()
+    {
+        isLoading = true;
+        try
+        {
+            orderHeader = UnitOfWork.orderHeader.Get(u => u.Id == Id, includeProperties: "appUser");
+            if (orderHeader != null)
+            {
+                orderDetails = UnitOfWork.orderDetail.GetAll(u => u.OrderHeaderId == Id, includeProperties: "Product").ToList();
+                var allImages = UnitOfWork.ProductImage.GetAll().ToList();
+                foreach (var detail in orderDetails)
+                {
+                    if (detail.product != null)
+                    {
+                        detail.product.ProductImages = allImages.Where(i => i.ProductId == detail.product.Id).ToList();
+                    }
+                }
+
+                carrier = orderHeader.Carrier ?? "";
+                trackingNumber = orderHeader.TrackingNumber ?? "";
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not load order details.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task StartProcessing()
+    {
+        try
+        {
+            UnitOfWork.orderHeader.UpdateStatus(Id, SD.StatusInProcess);
+            UnitOfWork.Save();
+            ToastService.ShowSuccess("Order is now being processed.");
+            await LoadOrder();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not update order status.");
+        }
+    }
+
+    private async Task ShipOrder()
+    {
+        if (string.IsNullOrWhiteSpace(carrier) || string.IsNullOrWhiteSpace(trackingNumber))
+        {
+            ToastService.ShowWarning("Please enter both carrier and tracking number.");
+            return;
+        }
+
+        try
+        {
+            UnitOfWork.orderHeader.UpdateStatus(Id, SD.StatusShipped);
+            var header = UnitOfWork.orderHeader.Get(u => u.Id == Id, tracked: true);
+            header.Carrier = carrier;
+            header.TrackingNumber = trackingNumber;
+            header.ShippingDate = DateTime.Now;
+            UnitOfWork.Save();
+            ToastService.ShowSuccess("Order has been shipped.");
+            await LoadOrder();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not ship order.");
+        }
+    }
+
+    private async Task CancelOrder()
+    {
+        try
+        {
+            if (orderHeader?.PaymentStatus == SD.PaymentStatusApproved)
+            {
+                // Refund via Stripe if paid
+                var secretKey = Configuration.GetSection("Stripe:SecretKey").Get<string>();
+                if (!string.IsNullOrEmpty(secretKey) && !string.IsNullOrEmpty(orderHeader.PaymentIntenId))
+                {
+                    Stripe.StripeConfiguration.ApiKey = secretKey;
+                    var options = new Stripe.RefundCreateOptions
+                    {
+                        PaymentIntent = orderHeader.PaymentIntenId,
+                    };
+                    var service = new Stripe.RefundService();
+                    await service.CreateAsync(options);
+                }
+            }
+
+            UnitOfWork.orderHeader.UpdateStatus(Id, SD.StatusCancelled, SD.PaymentStatusRejected);
+            UnitOfWork.Save();
+            ToastService.ShowWarning("Order has been cancelled.");
+            await LoadOrder();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not cancel order.");
+        }
+    }
+}

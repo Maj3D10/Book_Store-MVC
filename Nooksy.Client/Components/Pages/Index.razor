@@ -1,0 +1,219 @@
+@page "/"
+@inject IUnitOfWork UnitOfWork
+@inject NavigationManager NavigationManager
+
+<PageTitle>Nooksy - Children's Ebook Store</PageTitle>
+
+<div class="storefront-wrapper pb-5">
+    <!-- Playful Hero Section -->
+    <section class="nooksy-hero text-center text-md-start mb-5">
+        <div class="container-xxl py-3">
+            <div class="row align-items-center g-5">
+                <div class="col-12 col-md-7">
+                    <span class="badge text-white px-3 py-2 mb-3 bg-accent rounded-pill font-display fw-bold shadow-sm" style="font-size: 0.85rem;">Welcome to Nooksy!</span>
+                    <h1 class="display-3 font-display fw-extrabold text-primary mb-3" style="line-height: 1.1;">
+                        Discover books <br class="d-none d-lg-block"> kids love <span class="text-accent">♥</span>
+                    </h1>
+                    <p class="fs-5 text-text-muted mb-4 font-body" style="max-width: 500px; line-height: 1.6;">
+                        Explore our wonderful collection of rounded, friendly tales, scientific wonders, and playful math ebooks for children of all ages.
+                    </p>
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-3 flex-wrap">
+                        <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Primary" 
+                                      Size="lg" 
+                                      OnClick="ScrollToBooks">
+                            <i class="bi bi-book-half"></i> Browse Books
+                        </Nooksy.Client.Components.UI.NooksyButton>
+                        <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Outline" 
+                                      Size="lg" 
+                                      OnClick="ScrollToCategories">
+                            View Categories
+                        </Nooksy.Client.Components.UI.NooksyButton>
+                    </div>
+                </div>
+                <div class="col-12 col-md-5 d-none d-md-block text-center">
+                    <!-- Playful Books Graphic or Inline Character SVG -->
+                    <svg width="340" height="340" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(var(--shadow-lg)); animation: floatCharacter 4s infinite ease-in-out;">
+                        <circle cx="200" cy="200" r="160" fill="#4AABDB" fill-opacity="0.15"/>
+                        <circle cx="200" cy="200" r="130" fill="#E87D7D" fill-opacity="0.25"/>
+                        <!-- Book shape -->
+                        <rect x="120" y="110" width="160" height="190" rx="16" fill="var(--color-primary)" />
+                        <rect x="135" y="125" width="130" height="160" rx="12" fill="white" />
+                        <!-- Character smile inside the book -->
+                        <circle cx="170" cy="180" r="10" fill="var(--color-text)" />
+                        <circle cx="230" cy="180" r="10" fill="var(--color-text)" />
+                        <path d="M180 220C180 231.046 188.954 240 200 240C211.046 240 220 231.046 220 220H180Z" fill="var(--color-accent)" />
+                        <path d="M110 260C110 250 120 250 130 250H270C280 250 290 250 290 260V290C290 300 280 310 270 310H130C120 310 110 300 110 290V260Z" fill="var(--color-border)" fill-opacity="0.4"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <!-- Hero Wavy Bottom Shape -->
+        <div class="wavy-bg">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V0C26.9,8.75,55.05,16.22,83.1,22.81,159,40.69,242.43,67.87,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Main Content Container -->
+    <div class="container-xxl">
+        <!-- Categories horizontal row -->
+        <div id="categories-section" class="mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h3 class="font-display fw-bold m-0 text-primary">Browse by Category</h3>
+                @if (selectedCategoryId != null)
+                {
+                    <button class="btn btn-sm btn-link text-accent p-0 font-display fw-bold text-decoration-none" @onclick="ClearFilter">
+                        Show All Books <i class="bi bi-x-circle ms-1"></i>
+                    </button>
+                }
+            </div>
+            
+            <div class="category-row pb-2">
+                <button class="category-pill @(selectedCategoryId == null ? "active" : "")" @onclick="ClearFilter">
+                    <i class="bi bi-grid-fill me-2"></i> All Stories
+                </button>
+                @foreach (var cat in categories)
+                {
+                    var catId = cat.Id;
+                    <button class="category-pill @(selectedCategoryId == catId ? "active" : "")" 
+                            @onclick="() => FilterByCategory(catId)">
+                        <i class="bi bi-stars me-2 text-warning"></i> @cat.Name
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Promotional Banner Strip -->
+        <div class="mb-5">
+            <div class="promo-strip d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                <div class="text-md-start">
+                    <h4 class="m-0 font-display"><i class="bi bi-tags-fill me-2"></i> Bulk Discounts for Schools & Libraries!</h4>
+                    <p class="m-0 small opacity-90 mt-1">Get amazing unit price drops when ordering 50 or 100+ copies of any ebook cover.</p>
+                </div>
+                <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.OutlinePrimary" 
+                              Size="sm" 
+                              Class="bg-white border-0 text-accent font-display" 
+                              OnClick="ScrollToBooks">
+                    Explore Pricing Tiers
+                </Nooksy.Client.Components.UI.NooksyButton>
+            </div>
+        </div>
+
+        <!-- Featured Books Grid -->
+        <div id="books-section" class="mb-5">
+            <h2 class="font-display fw-extrabold text-primary mb-4 text-center text-md-start">
+                @(selectedCategoryId == null ? "Featured Books" : $"Books in {categories.FirstOrDefault(c => c.Id == selectedCategoryId)?.Name}")
+            </h2>
+
+            @if (isLoading)
+            {
+                <Nooksy.Client.Components.UI.LoadingSpinner Message="Opening our library cabinet..." />
+            }
+            else if (!filteredProducts.Any())
+            {
+                <div class="text-center py-5 nooksy-card border-dashed p-5" style="border: 2px dashed var(--color-border); border-radius: var(--radius-lg); background: white;">
+                    <i class="bi bi-emoji-frown fs-1 text-primary mb-3"></i>
+                    <h4 class="font-display text-primary">No books found in this shelf</h4>
+                    <p class="text-muted mb-0">We are currently cataloguing more playful ebooks for this category. Check back soon!</p>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4 animate-grid">
+                    @foreach (var prod in filteredProducts)
+                    {
+                        <div class="col">
+                            <Nooksy.Client.Components.Customer.ProductCard Product="prod" />
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes floatCharacter {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    .animate-grid {
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @@keyframes fadeInUp {
+        from { transform: translateY(15px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+@code {
+    private IEnumerable<Category> categories = Enumerable.Empty<Category>();
+    private IEnumerable<Product> products = Enumerable.Empty<Product>();
+    private List<Product> filteredProducts = new();
+    
+    private int? selectedCategoryId = null;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            categories = UnitOfWork.Category.GetAll(orderBy: c => c.OrderBy(o => o.DisplayOrder)).ToList();
+            products = UnitOfWork.Product.GetAll(includeProperties: "Category,ProductImages").ToList();
+            
+            // Seed image collections to each product to prevent reference issues
+            var productImages = UnitOfWork.ProductImage.GetAll().ToList();
+            foreach (var prod in products)
+            {
+                prod.ProductImages = productImages.Where(u => u.ProductId == prod.Id).ToList();
+            }
+
+            FilterProducts();
+        }
+        catch (Exception ex)
+        {
+            // Error handling
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void FilterByCategory(int categoryId)
+    {
+        selectedCategoryId = categoryId;
+        FilterProducts();
+    }
+
+    private void ClearFilter()
+    {
+        selectedCategoryId = null;
+        FilterProducts();
+    }
+
+    private void FilterProducts()
+    {
+        if (selectedCategoryId == null)
+        {
+            filteredProducts = products.ToList();
+        }
+        else
+        {
+            filteredProducts = products.Where(u => u.CategoryId == selectedCategoryId).ToList();
+        }
+    }
+
+    private void ScrollToBooks()
+    {
+        // Simple mock trigger for scroll or navigation
+    }
+
+    private void ScrollToCategories()
+    {
+        // Simple mock trigger
+    }
+}

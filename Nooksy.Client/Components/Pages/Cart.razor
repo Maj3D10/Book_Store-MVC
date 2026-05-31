@@ -1,0 +1,235 @@
+@page "/cart"
+@attribute [Authorize]
+@inject IUnitOfWork UnitOfWork
+@inject AuthenticationStateProvider AuthStateProvider
+@inject Nooksy.Client.State.CartState CartState
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@using System.Security.Claims
+
+<PageTitle>My Reading Box - Nooksy</PageTitle>
+
+<div class="container-xxl py-5">
+    <h1 class="font-display fw-extrabold text-primary mb-4 text-start">My Reading Box</h1>
+
+    @if (isLoading)
+    {
+        <Nooksy.Client.Components.UI.LoadingSpinner Message="Tidying up your book pile..." />
+    }
+    else if (cartList == null || !cartList.Any())
+    {
+        <!-- Empty Cart State -->
+        <div class="text-center py-5 nooksy-card p-5 bg-white max-width-600 mx-auto" style="max-width: 550px; border-radius: var(--radius-lg);">
+            <svg width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" class="mb-4">
+                <circle cx="100" cy="100" r="80" fill="var(--color-border)" fill-opacity="0.5"/>
+                <!-- Empty open chest SVG -->
+                <path d="M60 90H140V140C140 145.523 135.523 150 130 150H70C64.4772 150 60 145.523 60 140V90Z" fill="var(--color-primary)" fill-opacity="0.3"/>
+                <path d="M60 90L40 70H160L140 90H60Z" fill="var(--color-primary)" fill-opacity="0.5"/>
+                <circle cx="100" cy="70" r="15" fill="var(--color-accent)" fill-opacity="0.3"/>
+            </svg>
+            <h3 class="font-display text-primary fw-bold mb-2">Your reading box is empty!</h3>
+            <p class="text-text-muted mb-4 font-body">It looks like you haven't selected any storybooks yet. Let's find some wonderful tales together!</p>
+            <a href="" class="btn-nooksy btn-nooksy-primary py-3 px-5 rounded-pill shadow-md"><i class="bi bi-search me-2"></i> Start Shopping</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Left: Cart Items list -->
+            <div class="col-12 col-lg-8">
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var cart in cartList)
+                    {
+                        <div class="nooksy-card p-3 bg-white d-flex align-items-center flex-wrap flex-md-nowrap gap-3 position-relative" style="animation: slideInUp 0.3s ease;">
+                            <!-- Cover thumbnail -->
+                            <div class="rounded overflow-hidden" style="width: 70px; height: 95px; background: #eef5fa; flex-shrink: 0;">
+                                @if (cart.Product.ProductImages != null && cart.Product.ProductImages.Any())
+                                {
+                                    <img src="@cart.Product.ProductImages.First().ImageUrl" class="w-100 h-100" style="object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+                                        <i class="bi bi-book fs-3"></i>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Details (Title, Author) -->
+                            <div class="flex-grow-1 text-start" style="min-width: 160px;">
+                                <h5 class="font-display fw-bold m-0 text-primary">@cart.Product.Title</h5>
+                                <span class="text-muted small d-block mb-1">By @cart.Product.Author</span>
+                                <span class="badge text-white bg-primary small fw-bold" style="font-size: 0.65rem;">@cart.Product.ISBN</span>
+                            </div>
+
+                            <!-- Quantity Selector Control -->
+                            <div class="d-flex align-items-center bg-light rounded-pill p-1 shadow-sm" style="border-radius: 100px;">
+                                <button type="button" class="btn btn-link text-primary border-0 p-1" @onclick="() => DecrementCart(cart)" aria-label="Decrease quantity">
+                                    <i class="bi bi-dash-circle-fill fs-5"></i>
+                                </button>
+                                <span class="px-2 font-display fw-bold fs-6">@cart.Count</span>
+                                <button type="button" class="btn btn-link text-primary border-0 p-1" @onclick="() => IncrementCart(cart)" aria-label="Increase quantity">
+                                    <i class="bi bi-plus-circle-fill fs-5"></i>
+                                </button>
+                            </div>
+
+                            <!-- Prices (Unit & Line Total) -->
+                            <div class="text-md-end ms-auto ms-md-0" style="min-width: 120px;">
+                                <span class="d-block fw-bold fs-5 text-primary">$@((cart.Price * cart.Count).ToString("F2"))</span>
+                                <span class="text-muted small">$@cart.Price.ToString("F2") / copy</span>
+                            </div>
+
+                            <!-- Trash Action -->
+                            <button type="button" class="btn btn-link text-danger border-0 p-2 ms-3" @onclick="() => RemoveCartItem(cart)"
+                                    style="color: var(--color-accent) !important;" aria-label="Remove item">
+                                <i class="bi bi-trash3 fs-5"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Checkout Sticky Summary -->
+            <div class="col-12 col-lg-4">
+                <div class="nooksy-card p-4 bg-white sticky-top" style="top: 100px; border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Order Summary</h4>
+                    
+                    <div class="d-flex flex-column gap-3 mb-4 small font-body text-text-muted">
+                        <div class="d-flex justify-content-between">
+                            <span>Storybooks Count:</span>
+                            <span class="fw-bold text-primary">@TotalCopiesCopies copies</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Subtotal:</span>
+                            <span class="fw-bold text-primary">$@GrandTotal.ToString("F2")</span>
+                        </div>
+                        <hr class="my-1 text-muted opacity-25">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span class="fs-5 text-primary font-display fw-bold">Grand Total:</span>
+                            <span class="fs-4 fw-extrabold text-accent font-display">$@GrandTotal.ToString("F2")</span>
+                        </div>
+                    </div>
+
+                    <!-- CTA Actions -->
+                    <Nooksy.Client.Components.UI.NooksyButton Variant="Nooksy.Client.Components.UI.NooksyButton.NooksyButtonVariant.Primary" 
+                                  Size="lg" 
+                                  Class="w-100 py-3 rounded-pill shadow-md border-0" 
+                                  OnClick="ProceedToCheckout">
+                        Proceed to Checkout <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
+                    </Nooksy.Client.Components.UI.NooksyButton>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes slideInUp {
+        from { transform: translateY(10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+@code {
+    private List<ShoppingCart> cartList = new();
+    private double GrandTotal { get; set; } = 0;
+    private int TotalCopiesCopies { get; set; } = 0;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCart();
+    }
+
+    private async Task LoadCart()
+    {
+        isLoading = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                cartList = UnitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId, includeProperties: "Product").ToList();
+                
+                var productImages = UnitOfWork.ProductImage.GetAll().ToList();
+                foreach (var cart in cartList)
+                {
+                    cart.Product.ProductImages = productImages.Where(u => u.ProductId == cart.Product.Id).ToList();
+                    cart.Price = PricingRules.GetPriceBasedOnQuantity(cart.Product, cart.Count);
+                }
+
+                RecalculateTotals();
+                
+                // Keep Navbar updated
+                CartState.SetCount(cartList.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve your shopping cart items.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void RecalculateTotals()
+    {
+        GrandTotal = 0;
+        TotalCopiesCopies = 0;
+        foreach (var cart in cartList)
+        {
+            cart.Price = PricingRules.GetPriceBasedOnQuantity(cart.Product, cart.Count);
+            GrandTotal += (cart.Price * cart.Count);
+            TotalCopiesCopies += cart.Count;
+        }
+    }
+
+    private async Task IncrementCart(ShoppingCart cart)
+    {
+        cart.Count++;
+        UnitOfWork.ShoppingCart.Update(cart);
+        UnitOfWork.Save();
+        RecalculateTotals();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DecrementCart(ShoppingCart cart)
+    {
+        if (cart.Count <= 1)
+        {
+            await RemoveCartItem(cart);
+        }
+        else
+        {
+            cart.Count--;
+            UnitOfWork.ShoppingCart.Update(cart);
+            UnitOfWork.Save();
+            RecalculateTotals();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RemoveCartItem(ShoppingCart cart)
+    {
+        UnitOfWork.ShoppingCart.Remove(cart);
+        UnitOfWork.Save();
+        cartList.Remove(cart);
+        RecalculateTotals();
+        
+        // Refresh Navbar state count
+        CartState.SetCount(cartList.Count);
+        ToastService.ShowSuccess($"Removed \"{cart.Product.Title}\" from your box.");
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ProceedToCheckout()
+    {
+        NavigationManager.NavigateTo("checkout");
+    }
+}

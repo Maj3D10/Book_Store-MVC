@@ -1,0 +1,227 @@
+@page "/order/confirmation/{id:int}"
+@inject IUnitOfWork UnitOfWork
+@inject AuthenticationStateProvider AuthStateProvider
+@inject Nooksy.Client.State.CartState CartState
+@inject IToastService ToastService
+@using Stripe.Checkout
+
+<PageTitle>Order Confirmed - Nooksy</PageTitle>
+
+<div class="container-xxl py-5">
+    @if (isLoading)
+    {
+        <Nooksy.Client.Components.UI.LoadingSpinner Message="Polishing your confirmation stamp..." />
+    }
+    else if (orderHeader == null)
+    {
+        <div class="text-center py-5 nooksy-card p-5 bg-white max-width-600 mx-auto" style="max-width: 550px;">
+            <i class="bi bi-x-circle fs-1 text-danger mb-3"></i>
+            <h3 class="font-display text-primary">Order not found</h3>
+            <p class="text-muted mb-4">We couldn't locate the order details in our registry.</p>
+            <a href="" class="btn-nooksy btn-nooksy-primary">Return to Shop</a>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-4 max-width-800 mx-auto" style="max-width: 750px;">
+            <!-- Success Animated Tick Icon (Coral/Green) -->
+            <div class="success-checkmark-wrapper mb-4">
+                <div class="checkmark-circle">
+                    <i class="bi bi-check-lg checkmark"></i>
+                </div>
+            </div>
+
+            <h1 class="font-display fw-extrabold text-primary display-5 mb-2">Order Confirmed!</h1>
+            <p class="fs-5 text-text-muted mb-5 font-body">Thank you for shopping at Nooksy! Your ebook box is ready for download.</p>
+
+            <div class="row g-4 text-start mb-5">
+                <!-- Order Metadata Card -->
+                <div class="col-12 col-md-6">
+                    <div class="nooksy-card p-4 bg-white h-100" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                        <h5 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Parcel Details</h5>
+                        <div class="d-flex flex-column gap-2 small font-body text-text-muted">
+                            <div>
+                                <span class="fw-bold">Order Number:</span> 
+                                <span class="text-primary font-display fw-bold">#@orderHeader.Id</span>
+                            </div>
+                            <div>
+                                <span class="fw-bold">Order Date:</span> 
+                                <span>@orderHeader.OrderDate.ToString("F")</span>
+                            </div>
+                            <div>
+                                <span class="fw-bold">Shipping To:</span> 
+                                <span class="d-block mt-1 p-2 bg-light rounded" style="font-size: 0.8rem;">
+                                    <strong>@orderHeader.Name</strong><br>
+                                    @orderHeader.StreetAddress<br>
+                                    @orderHeader.City, @orderHeader.State @orderHeader.PostalCode
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Status Card -->
+                <div class="col-12 col-md-6">
+                    <div class="nooksy-card p-4 bg-white h-100" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                        <h5 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Billing & Payment</h5>
+                        <div class="d-flex flex-column gap-2 small font-body text-text-muted">
+                            <div>
+                                <span class="fw-bold">Amount Paid:</span> 
+                                <span class="text-accent font-display fw-bold fs-5">$@orderHeader.OrderTotal.ToString("F2")</span>
+                            </div>
+                            <div>
+                                <span class="fw-bold">Payment Method:</span>
+                                <span>@(orderHeader.PaymentStatus == SD.PaymentStatusDelayedPayment ? "B2B Net-30 Terms" : "Credit Card")</span>
+                            </div>
+                            <div class="mt-2">
+                                <span class="fw-bold">Status Badge:</span>
+                                <div class="mt-1">
+                                    <Nooksy.Client.Components.UI.NooksyBadge Status="@orderHeader.OrderStatus" Text="@orderHeader.OrderStatus" />
+                                    <Nooksy.Client.Components.UI.NooksyBadge Status="@orderHeader.PaymentStatus" Text="@orderHeader.PaymentStatus" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="nooksy-card p-4 bg-white text-start mb-5" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                <h5 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Books in Box</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle m-0 small font-body">
+                        <thead>
+                            <tr class="table-light">
+                                <th class="py-2">Book cover</th>
+                                <th class="py-2">Storybook Title</th>
+                                <th class="py-2 text-center">Quantity</th>
+                                <th class="py-2 text-end">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in orderDetails)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="rounded overflow-hidden" style="width: 40px; height: 55px; background: #eef5fa;">
+                                            @if (item.product.ProductImages != null && item.product.ProductImages.Any())
+                                            {
+                                                <img src="@item.product.ProductImages.First().ImageUrl" class="w-100 h-100" style="object-fit: cover;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="bi bi-book"></i></div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>@item.product.Title</strong><br>
+                                        <span class="text-muted text-xs">By @item.product.Author</span>
+                                    </td>
+                                    <td class="text-center fw-bold">@item.Count</td>
+                                    <td class="text-end fw-bold text-primary">$@((item.Price * item.Count).ToString("F2"))</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Continue Shopping Button -->
+            <a href="" class="btn-nooksy btn-nooksy-primary py-3 px-5 rounded-pill shadow-md border-0"><i class="bi bi-cart3"></i> Continue Shopping</a>
+        </div>
+    }
+</div>
+
+<style>
+    /* Premium success tick keyframe animations */
+    .success-checkmark-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .checkmark-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(82, 199, 133, 0.1);
+        border: 4px solid var(--color-success);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: scalePop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .checkmark {
+        font-size: 3.5rem;
+        color: var(--color-success);
+        animation: rotatePop 0.4s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @@keyframes scalePop {
+        0% { transform: scale(0); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @@keyframes rotatePop {
+        0% { transform: rotate(-45deg) scale(0.5); opacity: 0; }
+        100% { transform: rotate(0deg) scale(1); opacity: 1; }
+    }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private OrderHeader? orderHeader;
+    private List<OrderDetail> orderDetails = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            orderHeader = UnitOfWork.orderHeader.Get(u => u.Id == Id, includeProperties: "appUser");
+            if (orderHeader != null)
+            {
+                // Capture Stripe Payments if necessary
+                if (orderHeader.PaymentStatus != SD.PaymentStatusDelayedPayment)
+                {
+                    var service = new SessionService();
+                    var session = await service.GetAsync(orderHeader.SessionId);
+                    
+                    if (session.PaymentStatus.ToLower() == "paid")
+                    {
+                        // Update order header statuses in Db
+                        UnitOfWork.orderHeader.UpdateStripePaymentID(Id, session.Id, session.PaymentIntentId);
+                        UnitOfWork.orderHeader.UpdateStatus(Id, SD.StatusApproved, SD.PaymentStatusApproved);
+                        UnitOfWork.Save();
+                        
+                        // Clear the Shopping Cart
+                        var shoppingCarts = UnitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == orderHeader.ApplicationUserId).ToList();
+                        UnitOfWork.ShoppingCart.RemoveRange(shoppingCarts);
+                        UnitOfWork.Save();
+                        
+                        // Update cart badge state to 0
+                        CartState.SetCount(0);
+                    }
+                }
+
+                // Fetch details
+                orderDetails = UnitOfWork.orderDetail.GetAll(u => u.OrderHeaderId == Id, includeProperties: "Product").ToList();
+                
+                // Seed Product Cover Images
+                var productImages = UnitOfWork.ProductImage.GetAll().ToList();
+                foreach (var detail in orderDetails)
+                {
+                    detail.product.ProductImages = productImages.Where(u => u.ProductId == detail.product.Id).ToList();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not retrieve order placement details.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,230 @@
+@page "/admin/products/upsert"
+@page "/admin/products/upsert/{id:int}"
+@layout Nooksy.Client.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin,Employee")]
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment WebHostEnvironment
+@using Nooksy.Client.Components.UI
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>@(product.Id == 0 ? "Create Product" : "Edit Product") - Nooksy</PageTitle>
+
+<div class="d-flex flex-column gap-4 text-start">
+    <div>
+        <a href="admin/products" class="btn btn-sm btn-link text-decoration-none text-muted font-display fw-bold p-0 mb-3">
+            <i class="bi bi-arrow-left me-2"></i> Back to Products
+        </a>
+        <h2 class="font-display fw-extrabold text-primary m-0">
+            @(product.Id == 0 ? "Create Product" : "Edit Product")
+        </h2>
+    </div>
+
+    <EditForm Model="product" OnValidSubmit="SaveProduct">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger small mb-3" />
+
+        <div class="row g-4">
+            <!-- Left Column: Main Fields -->
+            <div class="col-12 col-lg-8">
+                <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Book Information</h4>
+
+                    <div class="d-flex flex-column gap-3 font-body small">
+                        <div>
+                            <label class="form-label fw-bold text-primary">Title</label>
+                            <InputText @bind-Value="product.Title" class="form-control" placeholder="Book title" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                            <ValidationMessage For="() => product.Title" class="text-danger small" />
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-bold text-primary">Author</label>
+                                <InputText @bind-Value="product.Author" class="form-control" placeholder="Author name" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => product.Author" class="text-danger small" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-bold text-primary">ISBN</label>
+                                <InputText @bind-Value="product.ISBN" class="form-control" placeholder="ISBN-13" style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
+                                <ValidationMessage For="() => product.ISBN" class="text-danger small" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-bold text-primary">Category</label>
+                                <select @bind="product.CategoryId" class="form-select" style="border-radius: var(--radius-sm); border-color: var(--color-border);">
+                                    <option value="0">-- Select Category --</option>
+                                    @foreach (var cat in categories)
+                                    {
+                                        <option value="@cat.Id">@cat.Name</option>
+                                    }
+                                </select>
+                                <ValidationMessage For="() => product.CategoryId" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-bold text-primary">Description</label>
+                            <textarea @bind="product.Description" class="form-control" rows="6" placeholder="Book description..." style="border-radius: var(--radius-sm); border-color: var(--color-border);"></textarea>
+                            <ValidationMessage For="() => product.Description" class="text-danger small" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Section -->
+                <div class="nooksy-card p-4 bg-white mt-4" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Pricing Tiers</h4>
+
+                    <div class="row g-3 font-body small">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label fw-bold text-primary">List Price</label>
+                            <input type="number" @bind="product.ListPrice" class="form-control" placeholder="0.00" style="border-radius: var(--radius-sm); border-color: var(--color-border);" step="0.01" />
+                            <ValidationMessage For="() => product.ListPrice" class="text-danger small" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label fw-bold text-primary">Price (1-49)</label>
+                            <input type="number" @bind="product.Price" class="form-control" placeholder="0.00" style="border-radius: var(--radius-sm); border-color: var(--color-border);" step="0.01" />
+                            <ValidationMessage For="() => product.Price" class="text-danger small" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label fw-bold text-primary">Price (50-99)</label>
+                            <input type="number" @bind="product.Price50" class="form-control" placeholder="0.00" style="border-radius: var(--radius-sm); border-color: var(--color-border);" step="0.01" />
+                            <ValidationMessage For="() => product.Price50" class="text-danger small" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label fw-bold text-primary">Price (100+)</label>
+                            <input type="number" @bind="product.Price100" class="form-control" placeholder="0.00" style="border-radius: var(--radius-sm); border-color: var(--color-border);" step="0.01" />
+                            <ValidationMessage For="() => product.Price100" class="text-danger small" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Image Upload -->
+            <div class="col-12 col-lg-4">
+                <div class="nooksy-card p-4 bg-white" style="border-radius: var(--radius-lg); border-color: var(--color-border);">
+                    <h4 class="font-display fw-bold text-primary mb-3 border-bottom pb-2">Book Covers</h4>
+
+                    <ImageUploader ExistingImageUrls="existingImageUrls"
+                                   OnDeleteExistingImage="DeleteExistingImage"
+                                   OnFilesSelected="HandleFilesSelected" />
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 mt-4">
+            <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Primary" Type="submit" IsLoading="isSaving">
+                <i class="bi bi-check-lg me-1"></i> @(product.Id == 0 ? "Create Product" : "Update Product")
+            </NooksyButton>
+            <a href="admin/products" class="btn-nooksy btn-nooksy-outline">Cancel</a>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Product product = new();
+    private List<Category> categories = new();
+    private List<string> existingImageUrls = new();
+    private List<IBrowserFile> selectedFiles = new();
+    private bool isSaving = false;
+
+    protected override void OnInitialized()
+    {
+        categories = UnitOfWork.Category.GetAll(orderBy: c => c.OrderBy(o => o.DisplayOrder)).ToList();
+
+        if (Id != 0)
+        {
+            product = UnitOfWork.Product.Get(u => u.Id == Id, includeProperties: "Category,ProductImages");
+            if (product != null)
+            {
+                var images = UnitOfWork.ProductImage.GetAll(u => u.ProductId == Id).ToList();
+                product.ProductImages = images;
+                existingImageUrls = images.Select(i => i.ImageUrl).ToList();
+            }
+        }
+    }
+
+    private void HandleFilesSelected(List<IBrowserFile> files)
+    {
+        selectedFiles = files;
+    }
+
+    private async Task DeleteExistingImage(string imageUrl)
+    {
+        try
+        {
+            var image = UnitOfWork.ProductImage.Get(u => u.ImageUrl == imageUrl);
+            if (image != null)
+            {
+                var filePath = Path.Combine(WebHostEnvironment.WebRootPath, image.ImageUrl.TrimStart('/'));
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                UnitOfWork.ProductImage.Remove(image);
+                UnitOfWork.Save();
+
+                existingImageUrls.Remove(imageUrl);
+                ToastService.ShowSuccess("Image deleted successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not delete image.");
+        }
+    }
+
+    private async Task SaveProduct()
+    {
+        isSaving = true;
+        try
+        {
+            if (product.Id == 0)
+            {
+                UnitOfWork.Product.Add(product);
+                UnitOfWork.Save();
+            }
+            else
+            {
+                UnitOfWork.Product.Update(product);
+                UnitOfWork.Save();
+            }
+
+            // Save uploaded images
+            if (selectedFiles.Any())
+            {
+                var uploadsDir = Path.Combine(WebHostEnvironment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadsDir);
+
+                foreach (var file in selectedFiles)
+                {
+                    var fileName = $"{Guid.NewGuid()}_{file.Name}";
+                    var filePath = Path.Combine(uploadsDir, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(stream);
+
+                    var productImage = new ProductImage
+                    {
+                        ImageUrl = $"/images/products/{fileName}",
+                        ProductId = product.Id
+                    };
+                    UnitOfWork.ProductImage.Add(productImage);
+                }
+                UnitOfWork.Save();
+            }
+
+            ToastService.ShowSuccess(product.Id == 0 ? "Product created successfully!" : "Product updated successfully!");
+            NavigationManager.NavigateTo("admin/products");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Could not save product.");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

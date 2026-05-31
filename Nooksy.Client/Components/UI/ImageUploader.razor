@@ -1,0 +1,116 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+
+<div class="image-uploader-wrapper">
+    <!-- Drag and Drop Zone -->
+    <div class="uploader-zone p-4 text-center d-flex flex-column align-items-center justify-content-center border border-dashed rounded-lg"
+         style="border: 2px dashed var(--color-border); background: var(--color-bg); border-radius: var(--radius-lg); cursor: pointer; position: relative; min-height: 160px; transition: all 0.2s;"
+         onmouseover="this.style.borderColor='var(--color-primary)'; this.style.background='rgba(74, 171, 219, 0.04)';"
+         onmouseout="this.style.borderColor='var(--color-border)'; this.style.background='var(--color-bg)';">
+        
+        <InputFile OnChange="HandleFileSelection" multiple class="position-absolute" style="top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;" />
+        
+        <i class="bi bi-cloud-upload fs-1 text-primary mb-2"></i>
+        <h5 class="m-0 text-primary">Drag & Drop book covers here</h5>
+        <p class="text-muted small m-0 mt-1">Or click to browse files (JPEG, PNG formats supported)</p>
+    </div>
+
+    <!-- Preview Grids -->
+    @if (ExistingImageUrls.Any() || NewImagePreviews.Any())
+    {
+        <div class="mt-4">
+            <h6 class="text-muted mb-3 font-display">Book Cover Previews</h6>
+            <div class="d-flex flex-wrap gap-3">
+                <!-- Existing Cover Images -->
+                @foreach (var imgUrl in ExistingImageUrls)
+                {
+                    <div class="position-relative preview-card shadow-sm rounded-lg" style="width: 100px; height: 130px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); overflow: hidden;">
+                        <img src="@imgUrl" class="w-100 h-100" style="object-fit: cover;" />
+                        <button type="button" class="btn btn-sm btn-danger position-absolute" @onclick="() => DeleteExisting(imgUrl)"
+                                style="top: 4px; right: 4px; border-radius: 50px; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--color-accent); border: none; font-size: 0.8rem;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <span class="badge bg-primary position-absolute small" style="left: 4px; bottom: 4px; font-size: 0.6rem;">Saved</span>
+                    </div>
+                }
+
+                <!-- New Cover Images -->
+                @for (int i = 0; i < NewImagePreviews.Count; i++)
+                {
+                    var index = i;
+                    var preview = NewImagePreviews[index];
+                    <div class="position-relative preview-card shadow-sm rounded-lg" style="width: 100px; height: 130px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); overflow: hidden; animation: previewFadeIn 0.3s ease;">
+                        <img src="@preview.DataUrl" class="w-100 h-100" style="object-fit: cover;" />
+                        <button type="button" class="btn btn-sm btn-danger position-absolute" @onclick="() => DeleteNew(index)"
+                                style="top: 4px; right: 4px; border-radius: 50px; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--color-accent); border: none; font-size: 0.8rem;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <span class="badge bg-success position-absolute small" style="left: 4px; bottom: 4px; font-size: 0.6rem;">New</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes previewFadeIn {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>
+
+@code {
+    [Parameter] public List<string> ExistingImageUrls { get; set; } = new();
+    [Parameter] public EventCallback<string> OnDeleteExistingImage { get; set; }
+    [Parameter] public EventCallback<List<IBrowserFile>> OnFilesSelected { get; set; }
+
+    private List<IBrowserFile> SelectedNewFiles { get; set; } = new();
+    private List<ImagePreviewModel> NewImagePreviews { get; set; } = new();
+
+    private async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles().ToList();
+        foreach (var file in files)
+        {
+            SelectedNewFiles.Add(file);
+            
+            // Generate a local Base64 URL for rendering the thumbnail preview in browser
+            var format = file.ContentType;
+            using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); // max 5MB
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            var dataUrl = $"data:{format};base64,{base64}";
+            
+            NewImagePreviews.Add(new ImagePreviewModel
+            {
+                FileName = file.Name,
+                DataUrl = dataUrl
+            });
+        }
+
+        await OnFilesSelected.InvokeAsync(SelectedNewFiles);
+    }
+
+    private async Task DeleteExisting(string url)
+    {
+        await OnDeleteExistingImage.InvokeAsync(url);
+    }
+
+    private async Task DeleteNew(int index)
+    {
+        if (index >= 0 && index < SelectedNewFiles.Count)
+        {
+            SelectedNewFiles.RemoveAt(index);
+            NewImagePreviews.RemoveAt(index);
+            await OnFilesSelected.InvokeAsync(SelectedNewFiles);
+        }
+    }
+
+    private class ImagePreviewModel
+    {
+        public string FileName { get; set; } = "";
+        public string DataUrl { get; set; } = "";
+    }
+}

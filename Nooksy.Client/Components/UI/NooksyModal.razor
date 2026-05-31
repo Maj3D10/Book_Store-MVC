@@ -1,0 +1,45 @@
+@if (IsOpen)
+{
+    <div class="nooksy-modal-wrapper" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050; display: flex; align-items: center; justify-content: center;">
+        <!-- Backdrop Blur -->
+        <div class="nooksy-modal-backdrop" @onclick="CloseModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 43, 60, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all 0.3s ease;"></div>
+        
+        <!-- Centered Modal Content -->
+        <div class="nooksy-modal-content nooksy-card" style="position: relative; max-width: @Width; width: 90%; background: var(--color-surface); padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); z-index: 1051; animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+                <h3 class="m-0 text-primary">@Title</h3>
+                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            <div class="nooksy-modal-body mb-4" style="max-height: 70vh; overflow-y: auto;">
+                @ChildContent
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    @@keyframes slideIn {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Nooksy Info";
+    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public string Width { get; set; } = "500px";
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private async Task CloseModal()
+    {
+        IsOpen = false;
+        await OnClose.InvokeAsync();
+    }
+}

@@ -1,0 +1,50 @@
+@if (IsVisible)
+{
+    <div class="alert alert-@GetAlertClass() d-flex align-items-center justify-content-between p-3 my-3" 
+         style="border-radius: var(--radius-md); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-@GetIconClass() fs-4"></i>
+            <div>
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <span>@Message</span>
+                }
+                else
+                {
+                    @ChildContent
+                }
+            </div>
+        </div>
+        @if (Dismissible)
+        {
+            <button type="button" class="btn-close" @onclick="Dismiss" aria-label="Close"></button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Type { get; set; } = "Info"; // Success, Warning, Error, Info
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public bool Dismissible { get; set; } = false;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool IsVisible { get; set; } = true;
+
+    private void Dismiss() => IsVisible = false;
+
+    private string GetAlertClass() => Type.ToLower() switch
+    {
+        "success" => "success",
+        "warning" => "warning",
+        "error" => "danger",
+        _ => "info"
+    };
+
+    private string GetIconClass() => Type.ToLower() switch
+    {
+        "success" => "check-circle-fill",
+        "warning" => "exclamation-triangle-fill",
+        "error" => "x-circle-fill",
+        _ => "info-circle-fill"
+    };
+}
