@@ -1,48 +1,69 @@
-# FuzzyWeb
+# Nooksy
 
-FuzzyWeb is an ASP.NET Core MVC bookstore application with catalog browsing, role-based administration, shopping cart checkout, order management, and Stripe payment integration.
+Nooksy is a children's ebook store built with .NET 8 Blazor Server, featuring catalog browsing, role-based administration, shopping cart checkout, order management, and Stripe payment integration.
 
-The project is organized as a layered .NET solution with separate projects for the web UI, data access, shared models, and utility code.
+The solution is organized as a layered .NET application with separate projects for the Blazor UI, data access, shared models, utility/business rules, and lightweight automated tests.
 
 ## Features
 
 - Public bookstore catalog with product cards and detail pages
 - Product images with carousel support
 - Quantity-based pricing tiers
-- Customer shopping cart with session-based cart count
+- Customer shopping cart with live cart badge count
 - Stripe Checkout for standard customer orders
 - Delayed-payment flow for company accounts
-- Admin dashboard for categories, products, companies, users, and orders
-- Product image upload and deletion
-- ASP.NET Core Identity authentication
+- Admin dashboard with stat cards and recent orders
+- Full CRUD for categories, products (with image upload), and companies
+- User management with role badges and lock/unlock
+- Order management with status filter tabs and workflow actions
+- Product image upload and deletion via drag-and-drop uploader
+- ASP.NET Core Identity authentication (Blazor Identity pages)
 - Role-based authorization for `Customer`, `Company`, `Admin`, and `Employee`
-- User lock/unlock and role management
 - Order status workflow: pending, approved, processing, shipped, cancelled, refunded
 
 ## Tech Stack
 
 - .NET 8
-- ASP.NET Core MVC
-- Razor Pages for Identity
+- Blazor Server (interactive server-side rendering)
 - Entity Framework Core
 - SQL Server
 - ASP.NET Core Identity
 - Stripe.net
-- Bootstrap
-- jQuery
-- DataTables
-- SweetAlert2
-- Toastr
+- Bootstrap 5
+- Blazored.Toast
 - TinyMCE
+- Google Fonts (Nunito + DM Sans)
 
 ## Solution Structure
 
 ```text
-FuzzyWeb.sln
-FuzzyWeb/          ASP.NET Core MVC web app
-Fuzzy.DataAccess/  EF Core DbContext, migrations, repositories, seeding
-Fuzzy.Models/      Domain models and view models
-Fuzzy.Utility/     Shared constants, Stripe settings, email sender
+Nooksy.sln
+Nooksy.Client/       Blazor Server UI (customer + admin + identity pages)
+Nooksy.Web/          Original ASP.NET Core MVC app (legacy)
+Nooksy.DataAccess/   EF Core DbContext, migrations, repositories, seeding
+Nooksy.Models/       Domain models and view models
+Nooksy.Utility/      Shared constants, Stripe settings, business rules, email sender
+Nooksy.Tests/        Lightweight console-based automated tests
+```
+
+### UI Project Structure (Nooksy.Client)
+
+```text
+Nooksy.Client/
+├── Components/
+│   ├── Layout/           MainLayout, AdminLayout (collapsible sidebar)
+│   ├── Pages/
+│   │   ├── Customer/     Home, Product Details, Cart, Checkout, Order Confirmation
+│   │   └── Admin/        Dashboard, Categories, Products, Companies, Users, Orders
+│   ├── Customer/         ProductCard component
+│   ├── UI/               Reusable: Button, Badge, Alert, Modal, DataTable,
+│   │                     ImageUploader, LoadingSpinner, CartBadge
+│   └── Account/          Identity pages (Login, Register, Manage, etc.)
+├── State/                CartState scoped service
+├── wwwroot/
+│   ├── css/nooksy.css    Brand design system
+│   └── bootstrap/        Bootstrap 5
+└── Program.cs            DI, Identity, Stripe, middleware
 ```
 
 ## Getting Started
@@ -57,34 +78,59 @@ Fuzzy.Utility/     Shared constants, Stripe settings, email sender
 ### Clone and Build
 
 ```powershell
-git clone https://github.com/Maj3D10/Fuzzy_Web-MVC.git
-cd Fuzzy_Web-MVC/src
-dotnet restore FuzzyWeb.sln
-dotnet build FuzzyWeb.sln
+git clone https://github.com/Maj3D10/Nooksy.git
+cd Nooksy/src
+dotnet restore Nooksy.sln
+dotnet build Nooksy.sln
 ```
 
 ### Configure the Database
 
-The current app configures SQL Server in `FuzzyWeb/Program.cs`:
+The app reads the EF Core connection string from configuration:
 
-```csharp
-options.UseSqlServer("Server=.;Database=FuzzyBook;Trusted_Connection=True;TrustServerCertificate=True")
+```json
+{
+  "ConnectionStrings": {
+    "AppDbContextConnection": "Server=.;Database=Nooksy;Trusted_Connection=True;TrustServerCertificate=True"
+  }
+}
 ```
 
-Make sure your local SQL Server instance is available at `Server=.` or update the connection string before running.
+Update `Nooksy.Client/appsettings.json`, user secrets, or environment variables if your SQL Server instance uses a different server name.
 
 EF Core migrations are included under:
 
 ```text
-Fuzzy.DataAccess/Migrations/
+Nooksy.DataAccess/Migrations/
 ```
 
 On startup, the database initializer applies pending migrations and seeds roles, sample catalog data, companies, and the default admin account.
 
+### Configure Stripe
+
+Stripe keys are intentionally not committed. Configure them locally with user secrets or environment variables.
+
+Example using user secrets from the client project directory:
+
+```powershell
+cd Nooksy.Client
+dotnet user-secrets init
+dotnet user-secrets set "Stripe:SecretKey" "your_stripe_secret_key"
+dotnet user-secrets set "Stripe:PublishableKey" "your_stripe_publishable_key"
+```
+
+Optional checkout base URL:
+
+```powershell
+dotnet user-secrets set "Checkout:BaseUrl" "https://localhost:7128"
+```
+
+If `Checkout:BaseUrl` is empty, the checkout callback URLs are built from the current request host.
+
 ### Run the App
 
 ```powershell
-dotnet run --project FuzzyWeb/FuzzyBook.Web.csproj --launch-profile https
+dotnet run --project Nooksy.Client/Nooksy.Client.csproj
 ```
 
 Default project URLs:
@@ -94,21 +140,12 @@ https://localhost:7128
 http://localhost:5053
 ```
 
-IIS Express URLs:
-
-```text
-https://localhost:44325
-http://localhost:28208
-```
-
-Stripe success and cancel URLs are currently hardcoded to `https://localhost:44325/` in the cart checkout flow, so use the IIS Express HTTPS URL or update the domain in `CartController`.
-
 ## Default Admin Login
 
 The database initializer creates this admin user when roles are first seeded:
 
 ```text
-Email: admin@dotnetmastery.com
+Email: admin@nooksy.com
 Password: Admin123*
 ```
 
@@ -117,9 +154,9 @@ Password: Admin123*
 Main configuration files:
 
 ```text
-FuzzyWeb/appsettings.json
-FuzzyWeb/appsettings.Development.json
-FuzzyWeb/Properties/launchSettings.json
+Nooksy.Client/appsettings.json
+Nooksy.Client/appsettings.Development.json
+Nooksy.Client/Properties/launchSettings.json
 ```
 
 Important settings:
@@ -127,73 +164,90 @@ Important settings:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "...",
     "AppDbContextConnection": "..."
   },
   "Stripe": {
-    "SecretKey": "...",
-    "PublishableKey": "..."
+    "SecretKey": "",
+    "PublishableKey": ""
+  },
+  "Checkout": {
+    "BaseUrl": ""
   }
 }
 ```
 
-## Security Notes
+## Pages & Features
 
-This repository currently stores Stripe keys in `appsettings.json`. Before deploying or sharing a production copy:
+### Customer Area (Public Storefront)
 
-- Move secrets to user secrets, environment variables, or a secret manager.
-- Rotate any keys that were committed.
-- Avoid hardcoding checkout callback domains.
-- Review admin credentials and password policy.
+| Page | Route | Description |
+|------|-------|-------------|
+| Home | `/` | Hero section, category filter pills, featured books grid, promotional banner |
+| Product Details | `/product/{id}` | Image carousel, pricing tiers table, quantity selector, add to cart |
+| Cart | `/cart` | Item list with inline quantity controls, line totals, order summary |
+| Checkout | `/checkout` | Shipping form, B2B pay-later option, Stripe payment or delayed payment |
+| Order Confirmation | `/order/confirmation/{id}` | Success animation, order summary, Stripe session verification |
 
-## Main Application Areas
+### Admin Area
 
-### Customer
+All admin pages require `Admin` or `Employee` role.
 
-Customer-facing catalog and checkout code lives under:
-
-```text
-FuzzyWeb/Areas/Customer/
-```
-
-Key flows:
-
-- Browse products
-- View product details
-- Add items to cart
-- Update cart quantities
-- Submit checkout summary
-- Pay through Stripe or use delayed payment for company accounts
-- Receive order confirmation
-
-### Admin
-
-Admin code lives under:
-
-```text
-FuzzyWeb/Areas/Admin/
-```
-
-Admin users can manage:
-
-- Categories
-- Products
-- Product images
-- Companies
-- Users
-- Roles
-- Orders
-- Shipping status
+| Page | Route | Description |
+|------|-------|-------------|
+| Dashboard | `/admin/dashboard` | Stat cards (orders, revenue, products, users), recent orders table, low-image alert |
+| Categories | `/admin/categories` | DataTable with search/pagination, create, edit, delete |
+| Products | `/admin/products` | DataTable with cover thumbnails, create, edit, delete |
+| Companies | `/admin/companies` | DataTable with search, create, edit, delete |
+| Users | `/admin/users` | Role badges (color-coded), lock/unlock toggle |
+| Orders | `/admin/orders` | Status filter tabs, order detail with workflow actions (process, ship, cancel) |
 
 ### Identity
 
-Authentication pages live under:
+Authentication pages are Blazor components under `Components/Account/`:
 
-```text
-FuzzyWeb/Areas/Identity/Pages/
+- Login, Register (with extra fields: name, phone, address, role, company selection)
+- Password management, two-factor, email confirmation
+- Profile management
+
+Pages are styled to match the Nooksy brand: centered card, logo, rounded corners, blue/coral accents.
+
+## Reusable UI Components
+
+| Component | Parameters | Purpose |
+|-----------|-----------|---------|
+| `NooksyButton` | Variant, Size, Disabled, IsLoading, Type, OnClick | Primary/accent/outline/danger buttons with loading spinner |
+| `NooksyBadge` | Status, Text | Color-coded status badges (pending, approved, shipped, etc.) |
+| `NooksyAlert` | Type, Message, Dismissible, ChildContent | Success/warning/error/info alerts |
+| `NooksyModal` | Title, IsOpen, Width, OnClose, ChildContent | Animated modal with backdrop blur |
+| `DataTable` | TItem, Items, HeaderTemplate, RowTemplate, SearchMatch, PageSize | Search, pagination, sortable columns |
+| `ImageUploader` | ExistingImageUrls, OnDeleteExistingImage, OnFilesSelected | Drag-and-drop zone, preview grid with delete |
+| `CartBadge` | (injected CartState) | Coral badge with bounce animation on count change |
+| `LoadingSpinner` | Message | Animated spinner with Nooksy branding |
+
+## State Management
+
+`CartState` is a scoped service that holds the cart item count and exposes an `OnChange` event. It is injected into `MainLayout` and the Cart page. When the count changes, `CartBadge` plays a bounce animation.
+
+## Brand Design
+
+The brand design system is defined in `wwwroot/css/nooksy.css`:
+
+```css
+--color-primary:      #4AABDB   /* Sky blue */
+--color-accent:       #E87D7D   /* Coral */
+--color-primary-dark: #2E8DB8
+--color-accent-dark:  #D05F5F
+--color-bg:           #F7FBFE
+--color-surface:      #FFFFFF
+--color-text:         #1A2B3C
+--color-text-muted:   #6B8299
+--color-border:       #D6EAF5
+--color-success:      #52C785
+--color-warning:      #F5A623
+--color-danger:       #E05C5C
 ```
 
-The registration page has been customized to collect profile fields, role selection, and company assignment.
+Typography: Nunito (headings), DM Sans (body). Rounded corners (12px–20px), soft shadows, no harsh edges.
 
 ## Data Model
 
@@ -203,48 +257,48 @@ Core entities:
 - `Product`
 - `ProductImage`
 - `Company`
-- `ApplicationUser`
+- `ApplicationUser` (extends `IdentityUser` with Name, Address, CompanyId)
 - `ShoppingCart`
 - `OrderHeader`
 - `OrderDetail`
 
 The data access layer uses a generic repository pattern with `UnitOfWork` to coordinate database operations.
 
-## Documentation
+## Business Rules
 
-Detailed internal codebase documentation is available in:
+Shared rules live in `Nooksy.Utility`:
 
-```text
-DOCUMENTATION.md
+- `PricingRules`: quantity-based product pricing (tiers at 1–49, 50–99, 100+)
+- `CartRules`: cart item merge behavior
+- `OrderStatusRules`: processing and shipping transitions
+- `SD`: role, order status, payment status, and session constants
+
+## Tests
+
+Run the lightweight automated test project:
+
+```powershell
+dotnet run --project Nooksy.Tests/Nooksy.Tests.csproj
 ```
 
-That file includes architecture notes, routes, entity details, payment flow, repository structure, and maintenance observations.
+Current coverage includes:
 
-## Build Status
+- Pricing tier boundaries
+- Cart item merge behavior
+- Order processing transition
+- Shipping transition and delayed-payment due date rules
 
-Current local verification:
+## Verification
 
 ```text
-dotnet build FuzzyWeb.sln
+dotnet build Nooksy.sln
 ```
 
 Result:
 
 ```text
-0 errors
-86 warnings
+Build: 0 errors
 ```
-
-Most warnings are existing nullable-reference warnings. The app builds successfully.
-
-## Known Maintenance Items
-
-- Move Stripe secrets out of source control.
-- Replace the hardcoded SQL Server connection string with configuration.
-- Fix the order list JavaScript status parameter handling.
-- Fix malformed script tags in the shared layout.
-- Add automated tests for pricing, cart behavior, and order status transitions.
-- Normalize inconsistent namespaces such as `FuzzyWeb`, `FuzzyBook.Web`, and `BulkyBookWeb`.
 
 ## License
 
