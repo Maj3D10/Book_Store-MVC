@@ -1,6 +1,7 @@
 @page "/admin/users"
 @using Microsoft.AspNetCore.Identity
 @using Nooksy.Client.Components.UI
+@inject ILogger<Index> Logger
 @layout Nooksy.Client.Components.Layout.AdminLayout
 @attribute [Authorize(Roles = "Admin,Employee")]
 @inject IUnitOfWork UnitOfWork
@@ -106,6 +107,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading users list");
             ToastService.ShowError("Could not retrieve users.");
         }
         finally
@@ -150,6 +152,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error toggling lock for user {UserName}", user?.Name);
             ToastService.ShowError("Could not update lock status.");
         }
     }

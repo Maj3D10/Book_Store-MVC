@@ -3,6 +3,7 @@
 @attribute [Authorize(Roles = "Admin,Employee")]
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
+@inject ILogger<Dashboard> Logger
 
 <PageTitle>Admin Dashboard - Nooksy</PageTitle>
 
@@ -172,6 +173,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading dashboard statistics");
             ToastService.ShowError("Could not retrieve dashboard statistics.");
         }
     }

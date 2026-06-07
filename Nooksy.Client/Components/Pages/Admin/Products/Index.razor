@@ -4,6 +4,7 @@
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
+@inject ILogger<Index> Logger
 @using Nooksy.Client.Components.UI
 
 <PageTitle>Manage Products - Nooksy</PageTitle>
@@ -104,6 +105,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading products list");
             ToastService.ShowError("Could not retrieve products.");
         }
         finally
@@ -142,6 +144,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error deleting product {ProductTitle}", productToDelete?.Title);
             ToastService.ShowError("Could not delete product.");
         }
     }

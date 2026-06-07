@@ -4,6 +4,7 @@
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
+@inject ILogger<Index> Logger
 @using Nooksy.Client.Components.UI
 
 <PageTitle>Manage Orders - Nooksy</PageTitle>
@@ -102,6 +103,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading orders list");
             ToastService.ShowError("Could not retrieve orders.");
         }
         finally

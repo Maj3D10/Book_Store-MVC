@@ -5,6 +5,7 @@
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
+@inject ILogger<Upsert> Logger
 @using Nooksy.Client.Components.UI
 
 <PageTitle>@(category.Id == 0 ? "Create Category" : "Edit Category") - Nooksy</PageTitle>
@@ -81,6 +82,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error saving category {CategoryName}", category?.Name);
             ToastService.ShowError("Could not save category. Please try again.");
         }
         finally

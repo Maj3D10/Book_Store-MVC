@@ -5,6 +5,7 @@
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
 @inject IConfiguration Configuration
+@inject ILogger<Detail> Logger
 @using Nooksy.Client.Components.UI
 
 <PageTitle>Order #@Id Details - Nooksy</PageTitle>
@@ -215,6 +216,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading order {OrderId}", Id);
             ToastService.ShowError("Could not load order details.");
         }
         finally
@@ -234,6 +236,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error starting processing for order {OrderId}", Id);
             ToastService.ShowError("Could not update order status.");
         }
     }
@@ -259,6 +262,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error shipping order {OrderId}", Id);
             ToastService.ShowError("Could not ship order.");
         }
     }
@@ -288,6 +292,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error cancelling order {OrderId}", Id);
             ToastService.ShowError("Could not cancel order.");
         }
     }

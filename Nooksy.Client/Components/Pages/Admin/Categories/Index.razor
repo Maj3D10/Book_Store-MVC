@@ -4,6 +4,7 @@
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
+@inject ILogger<Index> Logger
 @using Nooksy.Client.Components.UI
 
 <PageTitle>Manage Categories - Nooksy</PageTitle>
@@ -91,6 +92,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error loading categories");
             ToastService.ShowError("Could not retrieve categories list.");
         }
         finally
@@ -128,6 +130,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error deleting category {CategoryName}", categoryToDelete?.Name);
             ToastService.ShowError("Could not delete category. Verify if it is currently tied to any catalog products.");
         }
     }

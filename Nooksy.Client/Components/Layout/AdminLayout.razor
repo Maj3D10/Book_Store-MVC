@@ -45,9 +45,33 @@
                 }
             </NavLink>
             <NavLink href="admin/categories" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+                <i class="bi bi-tags fs-5"></i>
+                @if (!isSidebarCollapsed)
+                {
+                    <span>Categories</span>
+                }
+            </NavLink>
             <NavLink href="admin/products" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+                <i class="bi bi-book fs-5"></i>
+                @if (!isSidebarCollapsed)
+                {
+                    <span>Products</span>
+                }
+            </NavLink>
             <NavLink href="admin/companies" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+                <i class="bi bi-building fs-5"></i>
+                @if (!isSidebarCollapsed)
+                {
+                    <span>Companies</span>
+                }
+            </NavLink>
             <NavLink href="admin/users" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+                <i class="bi bi-people fs-5"></i>
+                @if (!isSidebarCollapsed)
+                {
+                    <span>Users</span>
+                }
+            </NavLink>
             <NavLink href="admin/orders" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
                 <i class="bi bi-receipt fs-5"></i>
                 @if (!isSidebarCollapsed)

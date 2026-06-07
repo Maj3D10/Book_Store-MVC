@@ -8,6 +8,7 @@
 @inject IWebHostEnvironment WebHostEnvironment
 @using Nooksy.Client.Components.UI
 @using Microsoft.AspNetCore.Components.Forms
+@inject ILogger<Upsert> Logger
 
 <PageTitle>@(product.Id == 0 ? "Create Product" : "Edit Product") - Nooksy</PageTitle>
 
@@ -171,6 +172,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error deleting product image");
             ToastService.ShowError("Could not delete image.");
         }
     }
@@ -220,6 +222,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error saving product {ProductTitle}", product?.Title);
             ToastService.ShowError("Could not save product.");
         }
         finally
