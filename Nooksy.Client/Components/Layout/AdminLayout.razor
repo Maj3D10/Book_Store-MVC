@@ -37,42 +37,18 @@
 
         <!-- Sidebar Navigation links -->
         <div class="flex-grow-1 py-3 d-flex flex-column gap-1 overflow-y-auto">
-            <NavLink href="admin/dashboard" class="nav-link d-flex align-items-center gap-3">
+            <NavLink href="admin/dashboard" Match="NavLinkMatch.All" class="nav-link d-flex align-items-center gap-3">
                 <i class="bi bi-speedometer2 fs-5"></i>
                 @if (!isSidebarCollapsed)
                 {
                     <span>Dashboard</span>
                 }
             </NavLink>
-            <NavLink href="admin/categories" class="nav-link d-flex align-items-center gap-3">
-                <i class="bi bi-tags fs-5"></i>
-                @if (!isSidebarCollapsed)
-                {
-                    <span>Categories</span>
-                }
-            </NavLink>
-            <NavLink href="admin/products" class="nav-link d-flex align-items-center gap-3">
-                <i class="bi bi-book fs-5"></i>
-                @if (!isSidebarCollapsed)
-                {
-                    <span>Products</span>
-                }
-            </NavLink>
-            <NavLink href="admin/companies" class="nav-link d-flex align-items-center gap-3">
-                <i class="bi bi-building fs-5"></i>
-                @if (!isSidebarCollapsed)
-                {
-                    <span>Companies</span>
-                }
-            </NavLink>
-            <NavLink href="admin/users" class="nav-link d-flex align-items-center gap-3">
-                <i class="bi bi-people fs-5"></i>
-                @if (!isSidebarCollapsed)
-                {
-                    <span>Users</span>
-                }
-            </NavLink>
-            <NavLink href="admin/orders" class="nav-link d-flex align-items-center gap-3">
+            <NavLink href="admin/categories" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+            <NavLink href="admin/products" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+            <NavLink href="admin/companies" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+            <NavLink href="admin/users" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
+            <NavLink href="admin/orders" Match="NavLinkMatch.Prefix" class="nav-link d-flex align-items-center gap-3">
                 <i class="bi bi-receipt fs-5"></i>
                 @if (!isSidebarCollapsed)
                 {
@@ -108,7 +84,7 @@
                 <nav aria-label="breadcrumb" class="d-none d-sm-block">
                     <ol class="breadcrumb m-0" style="font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;">
                         <li class="breadcrumb-item"><a href="admin/dashboard" class="text-decoration-none text-muted">Admin</a></li>
-                        <li class="breadcrumb-item active text-primary" aria-current="page">Portal</li>
+                        <li class="breadcrumb-item active text-primary" aria-current="page">@GetCurrentSection()</li>
                     </ol>
                 </nav>
             </div>
@@ -167,4 +143,15 @@
     private bool isSidebarCollapsed = false;
 
     private void ToggleSidebar() => isSidebarCollapsed = !isSidebarCollapsed;
+
+    private string GetCurrentSection()
+    {
+        var uri = NavigationManager.Uri;
+        if (uri.Contains("/categories")) return "Categories";
+        if (uri.Contains("/products")) return "Products";
+        if (uri.Contains("/companies")) return "Companies";
+        if (uri.Contains("/users")) return "Users";
+        if (uri.Contains("/orders")) return "Orders";
+        return "Dashboard";
+    }
 }
