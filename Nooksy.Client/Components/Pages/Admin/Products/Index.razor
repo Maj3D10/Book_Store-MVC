@@ -101,11 +101,6 @@
         try
         {
             products = UnitOfWork.Product.GetAll(includeProperties: "Category,ProductImages").ToList();
-            var allImages = UnitOfWork.ProductImage.GetAll().ToList();
-            foreach (var prod in products)
-            {
-                prod.ProductImages = allImages.Where(i => i.ProductId == prod.Id).ToList();
-            }
         }
         catch (Exception ex)
         {

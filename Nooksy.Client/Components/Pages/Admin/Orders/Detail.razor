@@ -207,15 +207,7 @@
             orderHeader = UnitOfWork.orderHeader.Get(u => u.Id == Id, includeProperties: "appUser");
             if (orderHeader != null)
             {
-                orderDetails = UnitOfWork.orderDetail.GetAll(u => u.OrderHeaderId == Id, includeProperties: "Product").ToList();
-                var allImages = UnitOfWork.ProductImage.GetAll().ToList();
-                foreach (var detail in orderDetails)
-                {
-                    if (detail.product != null)
-                    {
-                        detail.product.ProductImages = allImages.Where(i => i.ProductId == detail.product.Id).ToList();
-                    }
-                }
+                orderDetails = UnitOfWork.orderDetail.GetAll(u => u.OrderHeaderId == Id, includeProperties: "Product,Product.ProductImages").ToList();
 
                 carrier = orderHeader.Carrier ?? "";
                 trackingNumber = orderHeader.TrackingNumber ?? "";
@@ -277,11 +269,9 @@
         {
             if (orderHeader?.PaymentStatus == SD.PaymentStatusApproved)
             {
-                // Refund via Stripe if paid
-                var secretKey = Configuration.GetSection("Stripe:SecretKey").Get<string>();
-                if (!string.IsNullOrEmpty(secretKey) && !string.IsNullOrEmpty(orderHeader.PaymentIntenId))
+                // Refund via Stripe if paid (Stripe key already configured globally in Program.cs)
+                if (!string.IsNullOrEmpty(orderHeader.PaymentIntenId))
                 {
-                    Stripe.StripeConfiguration.ApiKey = secretKey;
                     var options = new Stripe.RefundCreateOptions
                     {
                         PaymentIntent = orderHeader.PaymentIntenId,

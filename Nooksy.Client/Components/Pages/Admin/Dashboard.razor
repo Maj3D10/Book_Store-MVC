@@ -167,11 +167,6 @@
 
             // Analyze products for low-stock covers
             var allProducts = UnitOfWork.Product.GetAll(includeProperties: "ProductImages").ToList();
-            var allImages = UnitOfWork.ProductImage.GetAll().ToList();
-            foreach (var prod in allProducts)
-            {
-                prod.ProductImages = allImages.Where(i => i.ProductId == prod.Id).ToList();
-            }
 
             productsWithNoImages = allProducts.Where(p => p.ProductImages == null || !p.ProductImages.Any()).ToList();
         }
