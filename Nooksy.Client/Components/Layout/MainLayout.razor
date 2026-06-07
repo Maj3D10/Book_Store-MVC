@@ -48,6 +48,7 @@
                            class="form-control form-control-sm ps-4 rounded-pill" 
                            placeholder="Search books..." 
                            style="border-color: var(--color-border); font-size: 0.85rem;" 
+                           @bind="searchQuery"
                            @onkeydown="HandleSearch" />
                     <i class="bi bi-search position-absolute text-muted" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;"></i>
                 </div>
@@ -126,8 +127,8 @@
     @if (isMobileMenuOpen)
     {
         <div class="mobile-drawer d-md-none position-fixed w-100 h-100" style="top: 0; left: 0; z-index: 1040; display: flex;">
-            <div class="backdrop" @onclick="ToggleMobileMenu" style="width: 30%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);"></div>
             <div class="drawer-content p-4" style="width: 70%; height: 100%; background: white; box-shadow: var(--shadow-lg); animation: slideInLeft 0.3s ease;">
+            <div class="backdrop" @onclick="ToggleMobileMenu" style="width: 30%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);"></div>
                 <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
                     <span class="fs-4 fw-bold font-display text-primary">Nooksy Menu</span>
                     <button class="btn-close" @onclick="ToggleMobileMenu"></button>
@@ -188,7 +189,7 @@
 
 <style>
     @@keyframes slideInLeft {
-        from { transform: translateX(100%); }
+        from { transform: translateX(-100%); }
         to { transform: translateX(0); }
     }
     .hover-link {
@@ -222,11 +223,13 @@
         }
     }
 
+    private string searchQuery = "";
+
     private void HandleSearch(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(searchQuery))
         {
-            // Optional: trigger navigation to shop with search criteria
+            NavigationManager.NavigateTo($"/shop?q={Uri.EscapeDataString(searchQuery)}");
         }
     }
 }
