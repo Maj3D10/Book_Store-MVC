@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
 
+.fs-7 { font-size: 0.8rem !important; }
+
 :root {
   --color-primary:      #4AABDB;
   --color-primary-dark: #2E8DB8;
@@ -392,3 +394,9 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-md) !important;
   border: 1px solid var(--color-border) !important;
 }
+
+/* Text color utilities */
+.text-accent      { color: var(--color-accent) !important; }
+.text-text-muted  { color: var(--color-text-muted) !important; }
+.bg-accent        { background-color: var(--color-accent) !important; }
+.border-accent    { border-color: var(--color-accent) !important; }
