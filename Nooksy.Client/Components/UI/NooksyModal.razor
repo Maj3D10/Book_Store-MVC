@@ -39,7 +39,6 @@
 
     private async Task CloseModal()
     {
-        IsOpen = false;
         await OnClose.InvokeAsync();
     }
 }

@@ -64,7 +64,7 @@
 
                         <div>
                             <label class="form-label fw-bold text-primary">Description</label>
-                            <textarea @bind="product.Description" class="form-control" rows="6" placeholder="Book description..." style="border-radius: var(--radius-sm); border-color: var(--color-border);"></textarea>
+                            <InputTextArea @bind-Value="product.Description" class="form-control" rows="6" placeholder="Book description..." style="border-radius: var(--radius-sm); border-color: var(--color-border);" />
                             <ValidationMessage For="() => product.Description" class="text-danger small" />
                         </div>
                     </div>

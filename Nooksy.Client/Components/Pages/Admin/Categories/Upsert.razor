@@ -5,6 +5,7 @@
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
+@using Nooksy.Client.Components.UI
 
 <PageTitle>@(category.Id == 0 ? "Create Category" : "Edit Category") - Nooksy</PageTitle>
 
@@ -37,7 +38,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 mt-4">
-                <NooksyButton Variant="NooksyButtonVariant.Primary" Type="submit" IsLoading="isSaving">
+                <NooksyButton Variant="NooksyButton.NooksyButtonVariant.Primary" Type="submit" IsLoading="isSaving">
                     <i class="bi bi-check-lg me-1"></i> @(category.Id == 0 ? "Create Category" : "Update Category")
                 </NooksyButton>
                 <a href="admin/categories" class="btn-nooksy btn-nooksy-outline">Cancel</a>
