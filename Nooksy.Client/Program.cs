@@ -79,13 +79,17 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseAntiforgery();
 app.UseSession();
+app.UseAntiforgery();
 
 var stripeSecretKey = builder.Configuration.GetSection("Stripe:SecretKey").Get<string>();
 if (!string.IsNullOrWhiteSpace(stripeSecretKey))
 {
     StripeConfiguration.ApiKey = stripeSecretKey;
+}
+else
+{
+    app.Logger.LogWarning("Stripe:SecretKey is not configured. Payment features will be unavailable.");
 }
 
 SeedDatabase();
